@@ -1,0 +1,98 @@
+<hgroup>
+  <h1><lucide-icon name="link-2" [size]="24" [strokeWidth]="2" /> Connections</h1>
+  <p>Connect Google and Outlook calendars to bring them into your master view.</p>
+</hgroup>
+
+<div class="connect-buttons">
+  @for (provider of providers; track provider.id) {
+    <button
+      type="button"
+      class="secondary connect-btn"
+      [attr.aria-busy]="connecting() === provider.id ? 'true' : null"
+      [disabled]="connecting() !== null"
+      (click)="connect(provider.id)">
+      @if (connecting() !== provider.id) {
+        Connect {{ provider.name }}
+      } @else {
+        Connecting&hellip;
+      }
+    </button>
+  }
+</div>
+
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+@if (!connections()) {
+  <span aria-busy="true">Loading&hellip;</span>
+} @else if (connections()!.length === 0) {
+  <p class="muted-empty">No calendars connected yet. Connect one above to start syncing events.</p>
+} @else {
+  <div class="connection-list">
+    @for (connection of connections(); track connection.id) {
+      <article class="connection-card">
+        <div class="connection-row">
+          <span class="colour-dot" [style.background]="connection.colour" (click)="showColourEditor(connection)" role="button" tabindex="0" aria-label="Change colour"></span>
+
+          <div class="connection-info">
+            <strong>{{ connection.accountEmail }}</strong>
+            <small class="connection-meta">
+              <span class="provider-badge" [class]="providerClass(connection.provider)">{{ providerName(connection.provider) }}</span>
+              @if (connection.needsReauth) {
+                <span class="badge-danger">Needs reauthorization</span>
+              } @else if (connection.lastSyncedAtUtc) {
+                Last synced {{ connection.lastSyncedAtUtc | date:'short' }}
+              } @else {
+                Not yet synced
+              }
+            </small>
+          </div>
+
+          <label class="visibility-toggle">
+            <input type="checkbox" role="switch" [checked]="connection.isVisible" (change)="toggleVisibility(connection)" />
+          </label>
+
+          <button class="icon-btn" title="Resync now" [attr.aria-busy]="resyncingId() === connection.id ? 'true' : null" (click)="resync(connection)">
+            @if (resyncingId() !== connection.id) {
+              <lucide-icon name="refresh-cw" [size]="18" [strokeWidth]="2" />
+            }
+          </button>
+
+          <button class="icon-btn" title="Disconnect" (click)="confirmDisconnect(connection)">
+            <lucide-icon name="trash-2" [size]="18" [strokeWidth]="2" />
+          </button>
+        </div>
+
+        @if (colourEditorId() === connection.id) {
+          <div class="colour-picker">
+            @for (c of colours(); track c.code) {
+              <button type="button" class="colour-swatch"
+                [style.background]="c.code"
+                [class.selected]="connection.colour === c.code"
+                [attr.aria-label]="c.name"
+                (click)="setColour(connection, c.code!)"></button>
+            }
+          </div>
+        }
+      </article>
+    }
+  </div>
+}
+
+<!-- Disconnect confirm dialog -->
+<dialog #disconnectDialog>
+  @if (disconnectTarget(); as target) {
+    <article>
+      <header>
+        <h3>Disconnect {{ target.accountEmail }}?</h3>
+        <button rel="prev" aria-label="Close" (click)="cancelDisconnect()"></button>
+      </header>
+      <p>Its cached events will be removed from your master calendar. The calendar itself is untouched.</p>
+      <footer>
+        <button class="secondary" (click)="cancelDisconnect()">Cancel</button>
+        <button class="danger" style="--pico-background-color: var(--pico-del-color); --pico-border-color: var(--pico-del-color); --pico-color: #fff;" (click)="disconnect()">Disconnect</button>
+      </footer>
+    </article>
+  }
+</dialog>

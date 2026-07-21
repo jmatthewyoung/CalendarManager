@@ -1,0 +1,80 @@
+<div class="calendar-header">
+  <hgroup>
+    <h1><lucide-icon name="calendar-days" [size]="24" [strokeWidth]="2" /> Calendar</h1>
+    <p>{{ rangeLabel() }}</p>
+  </hgroup>
+  <div class="calendar-nav">
+    <button class="icon-btn" (click)="previousWeek()" aria-label="Previous week"><lucide-icon name="chevron-left" [size]="22" [strokeWidth]="2" /></button>
+    <button class="secondary" (click)="goToToday()">Today</button>
+    <button class="icon-btn" (click)="nextWeek()" aria-label="Next week"><lucide-icon name="chevron-right" [size]="22" [strokeWidth]="2" /></button>
+  </div>
+</div>
+
+@if (connections().length === 0 && !loading()) {
+  <p class="muted-empty">
+    No visible calendars yet.
+    <a [routerLink]="['/connections']">Connect a calendar</a> to see your events here.
+  </p>
+} @else if (connections().length > 0) {
+  <div class="calendar-legend">
+    @for (connection of connections(); track connection.id) {
+      <span class="legend-chip">
+        <span class="colour-dot" [style.background]="connection.colour"></span>
+        {{ connection.accountEmail }}
+      </span>
+    }
+  </div>
+}
+
+<div class="week-grid" [class.loading]="loading()">
+  <!-- Day headers -->
+  <div class="week-grid-header">
+    <div class="time-gutter"></div>
+    @for (day of days(); track $index) {
+      <div class="day-header" [class.today]="isToday(day)">
+        <span class="day-name">{{ dayLabel(day) }}</span>
+        <span class="day-number">{{ day.getDate() }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- All-day row -->
+  <div class="week-grid-allday">
+    <div class="time-gutter">all-day</div>
+    @for (dayEvents of allDayEventsByDay(); track $index) {
+      <div class="allday-cell">
+        @for (event of dayEvents; track event.id) {
+          <span class="allday-event" [style.background]="event.colour">{{ event.title }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Scrollable hour grid -->
+  <div class="week-grid-body">
+    <div class="time-gutter-column">
+      @for (hour of hours; track hour) {
+        <div class="hour-label" [style.height.px]="hourHeightPx">{{ hourLabel(hour) }}</div>
+      }
+    </div>
+
+    @for (dayEvents of timedEventsByDay(); track $index; let dayIndex = $index) {
+      <div class="day-column" [class.today]="isToday(days()[dayIndex])" [style.height.px]="gridHeightPx">
+        @for (hour of hours; track hour) {
+          <div class="hour-line" [style.top.px]="hour * hourHeightPx"></div>
+        }
+        @for (positioned of dayEvents; track positioned.event.id) {
+          <div class="timed-event"
+            [style.top.px]="positioned.top"
+            [style.height.px]="positioned.height"
+            [style.left.%]="positioned.left"
+            [style.width.%]="positioned.width"
+            [style.background]="positioned.event.colour"
+            [title]="positioned.event.title">
+            <span class="timed-event-title">{{ positioned.event.title }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

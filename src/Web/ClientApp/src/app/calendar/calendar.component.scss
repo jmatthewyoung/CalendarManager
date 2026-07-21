@@ -1,0 +1,185 @@
+.calendar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pico-spacing);
+  flex-wrap: wrap;
+
+  hgroup {
+    margin-bottom: 0;
+  }
+
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+
+  button.secondary {
+    width: auto;
+    margin: 0;
+    padding: 0.35rem 1rem;
+  }
+}
+
+.muted-empty {
+  color: var(--pico-muted-color);
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--pico-spacing);
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+
+  .colour-dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+$time-gutter-width: 3.5rem;
+
+.week-grid {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  overflow: hidden;
+  transition: opacity 0.15s ease;
+
+  &.loading {
+    opacity: 0.5;
+  }
+}
+
+.week-grid-header,
+.week-grid-allday {
+  display: grid;
+  grid-template-columns: $time-gutter-width repeat(7, 1fr);
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.time-gutter {
+  padding: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--pico-muted-color);
+  text-align: right;
+  align-self: center;
+}
+
+.day-header {
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+  border-left: 1px solid var(--pico-muted-border-color);
+
+  .day-name {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--pico-muted-color);
+  }
+
+  .day-number {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  &.today .day-number {
+    color: var(--pico-primary);
+  }
+}
+
+.week-grid-allday {
+  min-height: 2rem;
+}
+
+.allday-cell {
+  border-left: 1px solid var(--pico-muted-border-color);
+  padding: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.allday-event {
+  font-size: 0.75rem;
+  color: #fff;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-grid-body {
+  display: grid;
+  grid-template-columns: $time-gutter-width repeat(7, 1fr);
+  max-height: 60vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.time-gutter-column {
+  border-right: 1px solid var(--pico-muted-border-color);
+}
+
+.hour-label {
+  padding-right: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--pico-muted-color);
+  text-align: right;
+  box-sizing: border-box;
+  transform: translateY(-0.5em);
+}
+
+.day-column {
+  position: relative;
+  border-left: 1px solid var(--pico-muted-border-color);
+
+  &.today {
+    background: color-mix(in srgb, var(--pico-primary) 4%, transparent);
+  }
+}
+
+.hour-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--pico-muted-border-color);
+  opacity: 0.5;
+}
+
+.timed-event {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  box-shadow: 0 0 0 1px var(--pico-background-color);
+}
+
+.timed-event-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

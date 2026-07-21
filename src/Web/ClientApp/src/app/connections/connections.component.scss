@@ -1,0 +1,90 @@
+hgroup h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.connect-buttons {
+  display: flex;
+  gap: var(--pico-spacing);
+  margin-bottom: calc(var(--pico-spacing) * 1.5);
+}
+
+.connect-btn {
+  width: auto;
+}
+
+.muted-empty {
+  color: var(--pico-muted-color);
+}
+
+.connection-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pico-spacing) * 0.75);
+}
+
+.connection-card {
+  margin-bottom: 0;
+  padding: calc(var(--pico-spacing) * 0.75) var(--pico-spacing);
+}
+
+.connection-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pico-spacing) * 0.75);
+}
+
+.connection-row .colour-dot {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.connection-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.connection-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--pico-muted-color);
+}
+
+.provider-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--pico-card-sectioning-background-color);
+  color: var(--pico-muted-color);
+
+  &.provider-google {
+    color: #1a73e8;
+  }
+
+  &.provider-outlook {
+    color: #0078d4;
+  }
+}
+
+.badge-danger {
+  font-weight: 600;
+  color: var(--pico-del-color);
+}
+
+.visibility-toggle {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.colour-picker {
+  margin-top: calc(var(--pico-spacing) * 0.5);
+  margin-bottom: 0;
+}

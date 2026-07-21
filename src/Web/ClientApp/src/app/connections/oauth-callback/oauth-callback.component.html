@@ -1,0 +1,9 @@
+@if (!error()) {
+  <p aria-busy="true">Finishing connection&hellip;</p>
+} @else {
+  <hgroup>
+    <h1>Connection failed</h1>
+    <p>{{ error() }}</p>
+  </hgroup>
+  <a role="button" [routerLink]="['/connections']">Back to connections</a>
+}

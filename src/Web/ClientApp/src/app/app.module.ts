@@ -1,8 +1,11 @@
-import { APP_ID, NgModule, inject, provideAppInitializer } from '@angular/core';
+import { APP_ID, NgModule, inject, provideAppInitializer, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { LucideAngularModule, Sun, Moon, Laptop, Plus, Settings, MoreHorizontal } from 'lucide-angular';
+import {
+  LucideAngularModule, Sun, Moon, Laptop, Plus, Settings, MoreHorizontal,
+  RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2
+} from 'lucide-angular';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { AppComponent } from './app.component';
@@ -12,12 +15,16 @@ import { CounterComponent } from './counter/counter.component';
 import { WeatherComponent } from './weather/weather.component';
 import { TasksComponent } from './todo/todo.component';
 import { ThemeToggleComponent } from './theme-toggle/theme-toggle.component';
+import { CalendarComponent } from './calendar/calendar.component';
+import { ConnectionsComponent } from './connections/connections.component';
+import { OAuthCallbackComponent } from './connections/oauth-callback/oauth-callback.component';
 import { API_BASE_URL } from './web-api-client';
 import { AuthorizeInterceptor } from 'src/api-authorization/authorize.interceptor';
 import { LoginComponent } from 'src/api-authorization/login/login.component';
 import { RegisterComponent } from 'src/api-authorization/register/register.component';
 import { AuthGuard } from 'src/api-authorization/auth.guard';
 import { AuthService } from 'src/api-authorization/auth.service';
+import { ServiceWorkerModule } from '@angular/service-worker';
 
 export function getApiBaseUrl(): string {
   const url = document.getElementsByTagName('base')[0].href;
@@ -33,6 +40,9 @@ export function getApiBaseUrl(): string {
         WeatherComponent,
         TasksComponent,
         ThemeToggleComponent,
+        CalendarComponent,
+        ConnectionsComponent,
+        OAuthCallbackComponent,
         LoginComponent,
         RegisterComponent
     ],
@@ -40,15 +50,28 @@ export function getApiBaseUrl(): string {
     imports: [
         BrowserModule,
         FormsModule,
-        LucideAngularModule.pick({ Sun, Moon, Laptop, Plus, Settings, MoreHorizontal }),
+        LucideAngularModule.pick({
+            Sun, Moon, Laptop, Plus, Settings, MoreHorizontal,
+            RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2
+        }),
         RouterModule.forRoot([
-            { path: '', component: HomeComponent, pathMatch: 'full' },
+            { path: '', component: CalendarComponent, pathMatch: 'full', canActivate: [AuthGuard] },
+            { path: 'connections', component: ConnectionsComponent, canActivate: [AuthGuard] },
+            { path: 'connections/callback/:provider', component: OAuthCallbackComponent, canActivate: [AuthGuard] },
             { path: 'counter', component: CounterComponent },
             { path: 'weather', component: WeatherComponent, canActivate: [AuthGuard] },
             { path: 'todo', component: TasksComponent, canActivate: [AuthGuard] },
             { path: 'login', component: LoginComponent },
             { path: 'register', component: RegisterComponent }
-        ])
+        ]),
+        
+      ServiceWorkerModule.register('ngsw-worker.js', {
+        enabled: !isDevMode(),
+        // Register the ServiceWorker as soon as the application is stable
+        // or after 30 seconds (whichever comes first).
+        registrationStrategy: 'registerWhenStable:30000'
+      })
+    
     ],
     providers: [
         { provide: APP_ID, useValue: 'ng-cli-universal' },
