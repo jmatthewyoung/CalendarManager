@@ -3,6 +3,40 @@
   <p>Connect Google and Outlook calendars to bring them into your master view.</p>
 </hgroup>
 
+<article class="notifications-card">
+  <div class="notifications-row">
+    <div>
+      <strong>Time zone</strong>
+      <p class="muted-empty">Used to show reminder times correctly.</p>
+    </div>
+    <select [ngModel]="selectedTimeZone()" (ngModelChange)="selectedTimeZone.set($event); timeZoneSaved.set(false)" style="width: auto; margin: 0;">
+      @for (tz of timeZones; track tz) {
+        <option [value]="tz">{{ tz }}</option>
+      }
+    </select>
+    <button type="button" class="secondary" [attr.aria-busy]="savingTimeZone() ? 'true' : null" (click)="saveTimeZone()">
+      {{ timeZoneSaved() ? 'Saved' : 'Save' }}
+    </button>
+  </div>
+</article>
+
+@if (pushService.supported) {
+  <article class="notifications-card">
+    <div class="notifications-row">
+      <div>
+        <strong>Push notifications</strong>
+        <p class="muted-empty">Get notified of upcoming events and calendars that need reconnecting.</p>
+      </div>
+      <button type="button" class="secondary" [attr.aria-busy]="pushService.busy() ? 'true' : null" (click)="toggleNotifications()">
+        {{ pushService.subscribed() ? 'Disable' : 'Enable' }}
+      </button>
+    </div>
+    @if (pushService.error()) {
+      <p class="error">{{ pushService.error() }}</p>
+    }
+  </article>
+}
+
 <div class="connect-buttons">
   @for (provider of providers; track provider.id) {
     <button
@@ -78,6 +112,58 @@
       </article>
     }
   </div>
+
+  <div class="activity-toggle">
+    <button type="button" class="secondary" (click)="toggleActivity()">
+      {{ showActivity() ? 'Hide' : 'Show' }} sync activity
+    </button>
+    <button type="button" class="secondary" (click)="toggleAuditLog()">
+      {{ showAuditLog() ? 'Hide' : 'Show' }} connection history
+    </button>
+  </div>
+
+  @if (showActivity()) {
+    <div class="activity-list">
+      @if (!syncLogs()) {
+        <span aria-busy="true">Loading&hellip;</span>
+      } @else if (syncLogs()!.length === 0) {
+        <p class="muted-empty">No sync activity yet.</p>
+      } @else {
+        @for (log of syncLogs(); track log.id) {
+          <div class="activity-row">
+            <span class="activity-status" [class.activity-status-error]="log.status !== 0">{{ statusLabel(log.status) }}</span>
+            <span class="activity-connection">{{ connectionLabel(log.calendarConnectionId) }}</span>
+            <span class="activity-counts">+{{ log.eventsAdded }} / ~{{ log.eventsUpdated }} / -{{ log.eventsRemoved }}</span>
+            <span class="activity-time">{{ log.ranAtUtc | date:'short' }}</span>
+            @if (log.message) {
+              <span class="activity-message">{{ log.message }}</span>
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+
+  @if (showAuditLog()) {
+    <div class="activity-list">
+      @if (!auditLog()) {
+        <span aria-busy="true">Loading&hellip;</span>
+      } @else if (auditLog()!.length === 0) {
+        <p class="muted-empty">No connection history yet.</p>
+      } @else {
+        @for (entry of auditLog(); track entry.id) {
+          <div class="activity-row">
+            <span class="activity-status" [class.activity-status-error]="entry.action === 1">{{ auditActionLabel(entry.action) }}</span>
+            <span class="activity-connection">
+              <span class="provider-badge" [class]="providerClass(entry.provider)">{{ providerName(entry.provider) }}</span>
+              {{ entry.accountEmail }}
+            </span>
+            <span class="activity-time" style="grid-column: 3 / span 2">{{ entry.occurredAtUtc | date:'short' }}</span>
+          </div>
+        }
+      }
+    </div>
+  }
 }
 
 <!-- Disconnect confirm dialog -->
@@ -95,4 +181,26 @@
       </footer>
     </article>
   }
+</dialog>
+
+<!-- OAuth consent dialog, shown once before the first calendar connection -->
+<dialog #consentDialog>
+  <article>
+    <header>
+      <h3>Before you connect</h3>
+      <button rel="prev" aria-label="Close" (click)="cancelConsent()"></button>
+    </header>
+    <p>
+      Connecting a calendar lets CalendarManager read your events from that provider so they can appear in your
+      master view. Your data stays in your own account and is never shared with third parties.
+    </p>
+    <label>
+      <input type="checkbox" [ngModel]="consentChecked()" (ngModelChange)="consentChecked.set($event)" />
+      I understand and want to continue
+    </label>
+    <footer>
+      <button class="secondary" (click)="cancelConsent()">Cancel</button>
+      <button [disabled]="!consentChecked()" (click)="confirmConsent()">Continue</button>
+    </footer>
+  </article>
 </dialog>

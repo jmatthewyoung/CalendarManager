@@ -490,3 +490,6 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
+
+# VS Code C# Dev Tools - Auto-generated runners
+.vscodecsdt/Runners/

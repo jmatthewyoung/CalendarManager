@@ -19,6 +19,7 @@ public class CompleteCalendarConnectionCommandHandler : IRequestHandler<Complete
     private readonly ICalendarProviderClientFactory _clientFactory;
     private readonly IRefreshTokenProtector _tokenProtector;
     private readonly ISender _sender;
+    private readonly TimeProvider _timeProvider;
 
     public CompleteCalendarConnectionCommandHandler(
         IApplicationDbContext context,
@@ -26,7 +27,8 @@ public class CompleteCalendarConnectionCommandHandler : IRequestHandler<Complete
         IOAuthStateStore stateStore,
         ICalendarProviderClientFactory clientFactory,
         IRefreshTokenProtector tokenProtector,
-        ISender sender)
+        ISender sender,
+        TimeProvider timeProvider)
     {
         _context = context;
         _user = user;
@@ -34,6 +36,7 @@ public class CompleteCalendarConnectionCommandHandler : IRequestHandler<Complete
         _clientFactory = clientFactory;
         _tokenProtector = tokenProtector;
         _sender = sender;
+        _timeProvider = timeProvider;
     }
 
     public async Task Handle(CompleteCalendarConnectionCommand request, CancellationToken cancellationToken)
@@ -66,6 +69,15 @@ public class CompleteCalendarConnectionCommandHandler : IRequestHandler<Complete
         };
 
         _context.CalendarConnections.Add(connection);
+
+        _context.ConnectionAuditLogs.Add(new ConnectionAuditLog
+        {
+            UserId = _user.Id!,
+            Provider = connection.Provider,
+            AccountEmail = connection.AccountEmail,
+            Action = ConnectionAuditAction.Connected,
+            OccurredAtUtc = _timeProvider.GetUtcNow()
+        });
 
         await _context.SaveChangesAsync(cancellationToken);
 

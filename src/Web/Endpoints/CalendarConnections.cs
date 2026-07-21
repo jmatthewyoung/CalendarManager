@@ -4,6 +4,7 @@ using CalendarManager.Application.CalendarConnections.Commands.DisconnectCalenda
 using CalendarManager.Application.CalendarConnections.Commands.SetCalendarConnectionColor;
 using CalendarManager.Application.CalendarConnections.Commands.SetCalendarConnectionVisibility;
 using CalendarManager.Application.CalendarConnections.Queries.GetCalendarConnections;
+using CalendarManager.Application.CalendarConnections.Queries.GetConnectionAuditLog;
 using CalendarManager.Application.Sync.Commands.SyncCalendarConnection;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -22,6 +23,7 @@ public class CalendarConnections : IEndpointGroup
         groupBuilder.MapPatch(SetCalendarConnectionColor, "{id}/color");
         groupBuilder.MapPatch(SetCalendarConnectionVisibility, "{id}/visibility");
         groupBuilder.MapPost(ResyncCalendarConnection, "{id}/resync");
+        groupBuilder.MapGet(GetConnectionAuditLog, "audit-log");
     }
 
     [EndpointSummary("Get connected calendars")]
@@ -89,5 +91,14 @@ public class CalendarConnections : IEndpointGroup
         await sender.Send(new SyncCalendarConnectionCommand(id));
 
         return TypedResults.NoContent();
+    }
+
+    [EndpointSummary("Get the connection audit log")]
+    [EndpointDescription("Retrieves the most recent connect/disconnect events for the current user's calendars.")]
+    public static async Task<Ok<List<ConnectionAuditLogDto>>> GetConnectionAuditLog(ISender sender)
+    {
+        var log = await sender.Send(new GetConnectionAuditLogQuery());
+
+        return TypedResults.Ok(log);
     }
 }

@@ -4,6 +4,30 @@ hgroup h1 {
   gap: 0.5rem;
 }
 
+.notifications-card {
+  margin-bottom: calc(var(--pico-spacing) * 1.5);
+  padding: calc(var(--pico-spacing) * 0.75) var(--pico-spacing);
+}
+
+.notifications-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pico-spacing);
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  button {
+    width: auto;
+    margin: 0;
+    padding: 0.35rem 1rem;
+    flex-shrink: 0;
+  }
+}
+
 .connect-buttons {
   display: flex;
   gap: var(--pico-spacing);
@@ -87,4 +111,62 @@ hgroup h1 {
 .colour-picker {
   margin-top: calc(var(--pico-spacing) * 0.5);
   margin-bottom: 0;
+}
+
+.activity-toggle {
+  margin-top: var(--pico-spacing);
+  display: flex;
+  gap: 0.5rem;
+
+  button {
+    width: auto;
+    margin: 0;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.85rem;
+  }
+}
+
+.activity-list {
+  margin-top: calc(var(--pico-spacing) * 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.activity-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+
+  .activity-message {
+    grid-column: 1 / -1;
+    color: var(--pico-muted-color);
+  }
+}
+
+.activity-status {
+  font-weight: 600;
+  color: var(--pico-primary);
+}
+
+.activity-status-error {
+  color: var(--pico-del-color);
+}
+
+.activity-connection {
+  color: var(--pico-muted-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-counts,
+.activity-time {
+  color: var(--pico-muted-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }

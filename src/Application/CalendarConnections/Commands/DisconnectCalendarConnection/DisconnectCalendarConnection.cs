@@ -1,5 +1,7 @@
 using CalendarManager.Application.Common.Interfaces;
 using CalendarManager.Application.Common.Security;
+using CalendarManager.Domain.Entities;
+using CalendarManager.Domain.Enums;
 
 namespace CalendarManager.Application.CalendarConnections.Commands.DisconnectCalendarConnection;
 
@@ -10,11 +12,13 @@ public class DisconnectCalendarConnectionCommandHandler : IRequestHandler<Discon
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly TimeProvider _timeProvider;
 
-    public DisconnectCalendarConnectionCommandHandler(IApplicationDbContext context, IUser user)
+    public DisconnectCalendarConnectionCommandHandler(IApplicationDbContext context, IUser user, TimeProvider timeProvider)
     {
         _context = context;
         _user = user;
+        _timeProvider = timeProvider;
     }
 
     public async Task Handle(DisconnectCalendarConnectionCommand request, CancellationToken cancellationToken)
@@ -26,6 +30,15 @@ public class DisconnectCalendarConnectionCommandHandler : IRequestHandler<Discon
         Guard.Against.NotFound(request.Id, entity);
 
         _context.CalendarConnections.Remove(entity);
+
+        _context.ConnectionAuditLogs.Add(new ConnectionAuditLog
+        {
+            UserId = _user.Id!,
+            Provider = entity.Provider,
+            AccountEmail = entity.AccountEmail,
+            Action = ConnectionAuditAction.Disconnected,
+            OccurredAtUtc = _timeProvider.GetUtcNow()
+        });
 
         await _context.SaveChangesAsync(cancellationToken);
     }

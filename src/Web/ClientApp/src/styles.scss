@@ -70,7 +70,7 @@ app-nav-menu > header nav > ul:first-child a {
 }
 
 // ── Login / Register centered layout ──────────────────────────────────────────
-app-root > main:has(> app-login, > app-register) {
+app-root > main:has(> app-login, > app-register, > app-forgot-password, > app-reset-password) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -78,12 +78,16 @@ app-root > main:has(> app-login, > app-register) {
   min-height: 100vh;
 
   > app-login,
-  > app-register {
+  > app-register,
+  > app-forgot-password,
+  > app-reset-password {
     display: contents;
   }
 
   > app-login > article,
-  > app-register > article {
+  > app-register > article,
+  > app-forgot-password > article,
+  > app-reset-password > article {
     width: 100%;
     max-width: map.get(map.get($breakpoints, "md"), "viewport");
   }

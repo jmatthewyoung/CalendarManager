@@ -4,7 +4,9 @@ using CalendarManager.Infrastructure.CalendarProviders;
 using CalendarManager.Infrastructure.Data;
 using CalendarManager.Infrastructure.Data.Interceptors;
 using CalendarManager.Infrastructure.Identity;
+using CalendarManager.Infrastructure.Push;
 using CalendarManager.Infrastructure.Security;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -57,7 +59,18 @@ public static class DependencyInjection
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddTransient<IIdentityService, IdentityService>();
 
-        builder.Services.AddDataProtection();
+        var dataProtectionBuilder = builder.Services.AddDataProtection();
+
+        // Encrypts the Data Protection keyring itself with an Azure Key Vault key, so the OAuth
+        // refresh tokens it protects (see DataProtectionRefreshTokenProtector) are encrypted at
+        // rest via Key Vault, per the PRD's security requirement. No-ops when unconfigured
+        // (local dev), falling back to the default on-disk keyring.
+        var dataProtectionKeyUri = builder.Configuration["AZURE_DATA_PROTECTION_KEY_URI"];
+        if (!string.IsNullOrWhiteSpace(dataProtectionKeyUri))
+        {
+            dataProtectionBuilder.ProtectKeysWithAzureKeyVault(new Uri(dataProtectionKeyUri), new global::Azure.Identity.DefaultAzureCredential());
+        }
+
         builder.Services.AddMemoryCache();
 
         builder.Services.AddSingleton<IRefreshTokenProtector, DataProtectionRefreshTokenProtector>();
@@ -73,14 +86,27 @@ public static class DependencyInjection
         builder.Services.AddHttpClient<OutlookCalendarClient>();
         builder.Services.AddScoped<ICalendarProviderClient>(sp => sp.GetRequiredService<OutlookCalendarClient>());
 
+        builder.Services.Configure<WebPushOptions>(builder.Configuration.GetSection(WebPushOptions.SectionName));
+        builder.Services.AddSingleton<IPushNotificationService, WebPushNotificationService>();
+
+        builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+        builder.Services.AddScoped<IEmailSender<ApplicationUser>, EmailSender>();
+
         builder.Services.AddQuartz(q =>
         {
-            var jobKey = new JobKey(nameof(CalendarSyncJob));
-            q.AddJob<CalendarSyncJob>(opts => opts.WithIdentity(jobKey));
+            var syncJobKey = new JobKey(nameof(CalendarSyncJob));
+            q.AddJob<CalendarSyncJob>(opts => opts.WithIdentity(syncJobKey));
             q.AddTrigger(opts => opts
-                .ForJob(jobKey)
+                .ForJob(syncJobKey)
                 .WithIdentity($"{nameof(CalendarSyncJob)}-trigger")
                 .WithSimpleSchedule(s => s.WithIntervalInMinutes(10).RepeatForever()));
+
+            var reminderJobKey = new JobKey(nameof(ReminderDispatchJob));
+            q.AddJob<ReminderDispatchJob>(opts => opts.WithIdentity(reminderJobKey));
+            q.AddTrigger(opts => opts
+                .ForJob(reminderJobKey)
+                .WithIdentity($"{nameof(ReminderDispatchJob)}-trigger")
+                .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
         });
         builder.Services.AddQuartzHostedService(opts => opts.WaitForJobsToComplete = true);
     }

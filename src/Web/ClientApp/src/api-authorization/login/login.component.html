@@ -17,6 +17,9 @@
       <small id="login-error">Invalid email or password.</small>
     }
     <button type="submit">Log in</button>
-    <p style="margin-top: 1rem">Don't have an account? <a [routerLink]="['/register']">Register</a></p>
+    <p style="margin-top: 1rem">
+      Don't have an account? <a [routerLink]="['/register']">Register</a>
+      &middot; <a [routerLink]="['/forgot-password']">Forgot password?</a>
+    </p>
   </form>
 </article>

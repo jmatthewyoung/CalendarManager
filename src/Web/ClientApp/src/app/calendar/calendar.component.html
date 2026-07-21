@@ -4,9 +4,17 @@
     <p>{{ rangeLabel() }}</p>
   </hgroup>
   <div class="calendar-nav">
-    <button class="icon-btn" (click)="previousWeek()" aria-label="Previous week"><lucide-icon name="chevron-left" [size]="22" [strokeWidth]="2" /></button>
+    <button class="icon-btn" (click)="previous()" aria-label="Previous"><lucide-icon name="chevron-left" [size]="22" [strokeWidth]="2" /></button>
     <button class="secondary" (click)="goToToday()">Today</button>
-    <button class="icon-btn" (click)="nextWeek()" aria-label="Next week"><lucide-icon name="chevron-right" [size]="22" [strokeWidth]="2" /></button>
+    <button class="icon-btn" (click)="next()" aria-label="Next"><lucide-icon name="chevron-right" [size]="22" [strokeWidth]="2" /></button>
+
+    <div class="view-mode-toggle" role="group" aria-label="Calendar view">
+      <button type="button" class="secondary" [class.active]="viewMode() === 'day'" (click)="setViewMode('day')">Day</button>
+      <button type="button" class="secondary" [class.active]="viewMode() === 'week'" (click)="setViewMode('week')">Week</button>
+      <button type="button" class="secondary" [class.active]="viewMode() === 'month'" (click)="setViewMode('month')">Month</button>
+    </div>
+
+    <button type="button" (click)="openNewEventDialog()"><lucide-icon name="plus" [size]="18" [strokeWidth]="2" /> New event</button>
   </div>
 </div>
 
@@ -16,65 +24,178 @@
     <a [routerLink]="['/connections']">Connect a calendar</a> to see your events here.
   </p>
 } @else if (connections().length > 0) {
-  <div class="calendar-legend">
-    @for (connection of connections(); track connection.id) {
-      <span class="legend-chip">
-        <span class="colour-dot" [style.background]="connection.colour"></span>
-        {{ connection.accountEmail }}
-      </span>
-    }
+  <div class="calendar-toolbar">
+    <div class="calendar-legend">
+      @for (connection of connections(); track connection.id) {
+        <button type="button" class="legend-chip" [class.hidden-chip]="isConnectionHidden(connection.id)" (click)="toggleConnectionFilter(connection.id)">
+          <span class="colour-dot" [style.background]="connection.colour"></span>
+          {{ connection.accountEmail }}
+        </button>
+      }
+    </div>
+    <div class="search-box">
+      <lucide-icon name="search" [size]="16" [strokeWidth]="2" />
+      <input type="search" placeholder="Search events&hellip;" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
   </div>
 }
 
-<div class="week-grid" [class.loading]="loading()">
-  <!-- Day headers -->
-  <div class="week-grid-header">
-    <div class="time-gutter"></div>
-    @for (day of days(); track $index) {
-      <div class="day-header" [class.today]="isToday(day)">
-        <span class="day-name">{{ dayLabel(day) }}</span>
-        <span class="day-number">{{ day.getDate() }}</span>
-      </div>
-    }
-  </div>
-
-  <!-- All-day row -->
-  <div class="week-grid-allday">
-    <div class="time-gutter">all-day</div>
-    @for (dayEvents of allDayEventsByDay(); track $index) {
-      <div class="allday-cell">
-        @for (event of dayEvents; track event.id) {
-          <span class="allday-event" [style.background]="event.colour">{{ event.title }}</span>
-        }
-      </div>
-    }
-  </div>
-
-  <!-- Scrollable hour grid -->
-  <div class="week-grid-body">
-    <div class="time-gutter-column">
-      @for (hour of hours; track hour) {
-        <div class="hour-label" [style.height.px]="hourHeightPx">{{ hourLabel(hour) }}</div>
+@if (viewMode() !== 'month') {
+  <div class="week-grid" [class.loading]="loading()">
+    <!-- Day headers -->
+    <div class="week-grid-header" [style.grid-template-columns]="gridTemplateColumns()">
+      <div class="time-gutter"></div>
+      @for (day of days(); track $index) {
+        <div class="day-header" [class.today]="isToday(day)">
+          <span class="day-name">{{ dayLabel(day) }}</span>
+          <span class="day-number">{{ day.getDate() }}</span>
+        </div>
       }
     </div>
 
-    @for (dayEvents of timedEventsByDay(); track $index; let dayIndex = $index) {
-      <div class="day-column" [class.today]="isToday(days()[dayIndex])" [style.height.px]="gridHeightPx">
+    <!-- All-day row -->
+    <div class="week-grid-allday" [style.grid-template-columns]="gridTemplateColumns()">
+      <div class="time-gutter">all-day</div>
+      @for (dayEvents of allDayEventsByDay(); track $index) {
+        <div class="allday-cell">
+          @for (event of dayEvents; track event.id) {
+            <span class="allday-event" [style.background]="event.colour" (click)="openEventDialog(event)" role="button" tabindex="0">{{ event.title }}</span>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Scrollable hour grid -->
+    <div class="week-grid-body" [style.grid-template-columns]="gridTemplateColumns()">
+      <div class="time-gutter-column">
         @for (hour of hours; track hour) {
-          <div class="hour-line" [style.top.px]="hour * hourHeightPx"></div>
+          <div class="hour-label" [style.height.px]="hourHeightPx">{{ hourLabel(hour) }}</div>
         }
-        @for (positioned of dayEvents; track positioned.event.id) {
-          <div class="timed-event"
-            [style.top.px]="positioned.top"
-            [style.height.px]="positioned.height"
-            [style.left.%]="positioned.left"
-            [style.width.%]="positioned.width"
-            [style.background]="positioned.event.colour"
-            [title]="positioned.event.title">
-            <span class="timed-event-title">{{ positioned.event.title }}</span>
+      </div>
+
+      @for (dayEvents of timedEventsByDay(); track $index; let dayIndex = $index) {
+        <div class="day-column" [class.today]="isToday(days()[dayIndex])" [style.height.px]="gridHeightPx">
+          @for (hour of hours; track hour) {
+            <div class="hour-line" [style.top.px]="hour * hourHeightPx"></div>
+          }
+          @for (positioned of dayEvents; track positioned.event.id) {
+            <div class="timed-event"
+              [style.top.px]="positioned.top"
+              [style.height.px]="positioned.height"
+              [style.left.%]="positioned.left"
+              [style.width.%]="positioned.width"
+              [style.background]="positioned.event.colour"
+              [title]="positioned.event.title"
+              (click)="openEventDialog(positioned.event)"
+              role="button" tabindex="0">
+              <span class="timed-event-title">{{ positioned.event.title }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="month-grid" [class.loading]="loading()">
+    <div class="month-grid-header">
+      @for (name of dayNames; track name) {
+        <div class="month-day-name">{{ name }}</div>
+      }
+    </div>
+    @for (week of monthWeeks(); track $index) {
+      <div class="month-grid-row">
+        @for (cell of week; track cell.date.getTime()) {
+          <div class="month-cell" [class.outside-month]="!cell.inCurrentMonth" [class.today]="isToday(cell.date)">
+            <button type="button" class="month-day-number" (click)="goToDay(cell.date)">{{ cell.date.getDate() }}</button>
+            <div class="month-cell-events">
+              @for (event of cell.events.slice(0, 3); track event.id) {
+                <span class="month-event-chip" [style.background]="event.colour" (click)="openEventDialog(event)" role="button" tabindex="0">
+                  {{ event.title }}
+                </span>
+              }
+              @if (cell.events.length > 3) {
+                <span class="month-event-overflow" (click)="goToDay(cell.date)" role="button" tabindex="0">
+                  +{{ cell.events.length - 3 }} more
+                </span>
+              }
+            </div>
           </div>
         }
       </div>
     }
   </div>
-</div>
+}
+
+<!-- Event dialog: full editor for local events, colour-only for synced events -->
+<dialog #eventDialog>
+  <article>
+    <header>
+      <h3>
+        @switch (dialogMode()) {
+          @case ('create') { New event }
+          @case ('edit-local') { Edit event }
+          @default { Event }
+        }
+      </h3>
+      <button rel="prev" aria-label="Close" (click)="closeEventDialog()"></button>
+    </header>
+
+    @if (dialogMode() === 'edit-synced') {
+      <p><strong>{{ eventEditor.title }}</strong></p>
+      <p class="muted-empty">
+        Synced from a connected calendar — title and time can't be edited here.
+      </p>
+    } @else {
+      <label for="eventTitle">Title</label>
+      <input type="text" id="eventTitle" placeholder="Event title&hellip;" [(ngModel)]="eventEditor.title" maxlength="1024" />
+
+      <label>
+        <input type="checkbox" [(ngModel)]="eventEditor.isAllDay" />
+        All-day
+      </label>
+
+      <div class="event-time-row">
+        <div>
+          <label for="eventStartDate">Start</label>
+          <input type="date" id="eventStartDate" [(ngModel)]="eventEditor.startDate" />
+        </div>
+        @if (!eventEditor.isAllDay) {
+          <input type="time" aria-label="Start time" [(ngModel)]="eventEditor.startTime" />
+        }
+      </div>
+
+      <div class="event-time-row">
+        <div>
+          <label for="eventEndDate">End</label>
+          <input type="date" id="eventEndDate" [(ngModel)]="eventEditor.endDate" />
+        </div>
+        @if (!eventEditor.isAllDay) {
+          <input type="time" aria-label="End time" [(ngModel)]="eventEditor.endTime" />
+        }
+      </div>
+    }
+
+    <label>Colour</label>
+    <div class="colour-picker">
+      @for (c of colours(); track c.code) {
+        <button type="button" class="colour-swatch"
+          [style.background]="c.code"
+          [class.selected]="eventEditor.colour === c.code"
+          [attr.aria-label]="c.name"
+          (click)="eventEditor.colour = c.code!"></button>
+      }
+    </div>
+
+    @if (eventError()) {
+      <p class="error">{{ eventError() }}</p>
+    }
+
+    <footer>
+      @if (dialogMode() === 'edit-local') {
+        <button class="danger" style="margin-inline-end: auto" [attr.aria-busy]="saving() ? 'true' : null" (click)="deleteEvent()">Delete</button>
+      }
+      <button class="secondary" (click)="closeEventDialog()">Cancel</button>
+      <button [attr.aria-busy]="saving() ? 'true' : null" (click)="saveEvent()">Save</button>
+    </footer>
+  </article>
+</dialog>

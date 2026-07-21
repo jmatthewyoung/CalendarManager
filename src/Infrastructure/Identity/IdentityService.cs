@@ -78,4 +78,35 @@ public class IdentityService : IIdentityService
 
         return result.ToApplicationResult();
     }
+
+    public async Task<string?> GetTimeZoneIdAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        return user?.TimeZoneId;
+    }
+
+    public async Task<Result> SetTimeZoneIdAsync(string userId, string timeZoneId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user is null)
+        {
+            return Result.Failure(["User not found."]);
+        }
+
+        try
+        {
+            TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return Result.Failure([$"'{timeZoneId}' is not a recognized time zone."]);
+        }
+
+        user.TimeZoneId = timeZoneId;
+        var result = await _userManager.UpdateAsync(user);
+
+        return result.ToApplicationResult();
+    }
 }

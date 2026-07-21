@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
-import { LoginRequest, RegisterRequest, UsersClient } from '../app/web-api-client';
+import { ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UsersClient } from '../app/web-api-client';
 
 @Injectable({
   providedIn: 'root'
@@ -35,5 +35,13 @@ export class AuthService {
     return this.usersClient.logout({}).pipe(
       tap(() => this._isAuthenticated.next(false))
     );
+  }
+
+  forgotPassword(email: string): Observable<void> {
+    return this.usersClient.forgotPassword(new ForgotPasswordRequest({ email }));
+  }
+
+  resetPassword(email: string, resetCode: string, newPassword: string): Observable<void> {
+    return this.usersClient.resetPassword(new ResetPasswordRequest({ email, resetCode, newPassword }));
   }
 }

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import {
   LucideAngularModule, Sun, Moon, Laptop, Plus, Settings, MoreHorizontal,
-  RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2
+  RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2, Search
 } from 'lucide-angular';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -22,6 +22,8 @@ import { API_BASE_URL } from './web-api-client';
 import { AuthorizeInterceptor } from 'src/api-authorization/authorize.interceptor';
 import { LoginComponent } from 'src/api-authorization/login/login.component';
 import { RegisterComponent } from 'src/api-authorization/register/register.component';
+import { ForgotPasswordComponent } from 'src/api-authorization/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from 'src/api-authorization/reset-password/reset-password.component';
 import { AuthGuard } from 'src/api-authorization/auth.guard';
 import { AuthService } from 'src/api-authorization/auth.service';
 import { ServiceWorkerModule } from '@angular/service-worker';
@@ -44,7 +46,9 @@ export function getApiBaseUrl(): string {
         ConnectionsComponent,
         OAuthCallbackComponent,
         LoginComponent,
-        RegisterComponent
+        RegisterComponent,
+        ForgotPasswordComponent,
+        ResetPasswordComponent
     ],
     bootstrap: [AppComponent],
     imports: [
@@ -52,7 +56,7 @@ export function getApiBaseUrl(): string {
         FormsModule,
         LucideAngularModule.pick({
             Sun, Moon, Laptop, Plus, Settings, MoreHorizontal,
-            RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2
+            RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2, Search
         }),
         RouterModule.forRoot([
             { path: '', component: CalendarComponent, pathMatch: 'full', canActivate: [AuthGuard] },
@@ -62,7 +66,9 @@ export function getApiBaseUrl(): string {
             { path: 'weather', component: WeatherComponent, canActivate: [AuthGuard] },
             { path: 'todo', component: TasksComponent, canActivate: [AuthGuard] },
             { path: 'login', component: LoginComponent },
-            { path: 'register', component: RegisterComponent }
+            { path: 'register', component: RegisterComponent },
+            { path: 'forgot-password', component: ForgotPasswordComponent },
+            { path: 'reset-password', component: ResetPasswordComponent }
         ]),
         
       ServiceWorkerModule.register('ngsw-worker.js', {

@@ -13,17 +13,20 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
     private readonly IApplicationDbContext _context;
     private readonly ICalendarProviderClientFactory _clientFactory;
     private readonly IRefreshTokenProtector _tokenProtector;
+    private readonly IPushNotificationService _pushNotificationService;
     private readonly TimeProvider _timeProvider;
 
     public SyncCalendarConnectionCommandHandler(
         IApplicationDbContext context,
         ICalendarProviderClientFactory clientFactory,
         IRefreshTokenProtector tokenProtector,
+        IPushNotificationService pushNotificationService,
         TimeProvider timeProvider)
     {
         _context = context;
         _clientFactory = clientFactory;
         _tokenProtector = tokenProtector;
+        _pushNotificationService = pushNotificationService;
         _timeProvider = timeProvider;
     }
 
@@ -54,7 +57,7 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
                 .Where(e => e.CalendarConnectionId == connection.Id)
                 .ToListAsync(cancellationToken);
 
-            var existingByExternalId = existingEvents.ToDictionary(e => e.ExternalEventId);
+            var existingByExternalId = existingEvents.ToDictionary(e => e.ExternalEventId!);
             var providerEventIds = providerEvents.Select(e => e.ExternalEventId).ToHashSet();
 
             foreach (var providerEvent in providerEvents)
@@ -78,6 +81,7 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
                     _context.CalendarEvents.Add(new CalendarEvent
                     {
                         CalendarConnectionId = connection.Id,
+                        UserId = connection.UserId,
                         ExternalEventId = providerEvent.ExternalEventId,
                         Title = providerEvent.Title,
                         StartUtc = providerEvent.StartUtc,
@@ -88,7 +92,7 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
                 }
             }
 
-            var removedEvents = existingEvents.Where(e => !providerEventIds.Contains(e.ExternalEventId));
+            var removedEvents = existingEvents.Where(e => !providerEventIds.Contains(e.ExternalEventId!));
             foreach (var removed in removedEvents)
             {
                 _context.CalendarEvents.Remove(removed);
@@ -101,9 +105,15 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
         }
         catch (CalendarAuthException ex)
         {
+            var wasAlreadyFlagged = connection.NeedsReauth;
             connection.NeedsReauth = true;
             log.Status = SyncStatus.AuthExpired;
             log.Message = ex.Message;
+
+            if (!wasAlreadyFlagged)
+            {
+                await NotifyReauthRequiredAsync(connection, cancellationToken);
+            }
         }
         catch (Exception ex)
         {
@@ -114,5 +124,28 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
         _context.SyncLogs.Add(log);
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task NotifyReauthRequiredAsync(CalendarConnection connection, CancellationToken cancellationToken)
+    {
+        var subscriptions = await _context.PushSubscriptions
+            .Where(p => p.UserId == connection.UserId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var subscription in subscriptions)
+        {
+            try
+            {
+                await _pushNotificationService.SendAsync(
+                    subscription,
+                    "Calendar needs reconnecting",
+                    $"{connection.AccountEmail} stopped syncing. Reconnect it to resume.",
+                    cancellationToken);
+            }
+            catch (PushSubscriptionExpiredException)
+            {
+                _context.PushSubscriptions.Remove(subscription);
+            }
+        }
     }
 }

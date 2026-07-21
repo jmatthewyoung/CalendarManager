@@ -14,5 +14,9 @@ public interface IApplicationDbContext
 
     DbSet<SyncLog> SyncLogs { get; }
 
+    DbSet<PushSubscription> PushSubscriptions { get; }
+
+    DbSet<ConnectionAuditLog> ConnectionAuditLogs { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
