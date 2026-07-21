@@ -15,6 +15,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
 
+    public DbSet<CalendarConnection> CalendarConnections => Set<CalendarConnection>();
+
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+
+    public DbSet<SyncLog> SyncLogs => Set<SyncLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

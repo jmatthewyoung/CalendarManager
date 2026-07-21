@@ -8,5 +8,11 @@ public interface IApplicationDbContext
 
     DbSet<TodoItem> TodoItems { get; }
 
+    DbSet<CalendarConnection> CalendarConnections { get; }
+
+    DbSet<CalendarEvent> CalendarEvents { get; }
+
+    DbSet<SyncLog> SyncLogs { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
