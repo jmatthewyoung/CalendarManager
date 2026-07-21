@@ -90,7 +90,7 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IPushNotificationService, WebPushNotificationService>();
 
         builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
-        builder.Services.AddScoped<IEmailSender<ApplicationUser>, EmailSender>();
+        builder.Services.AddSingleton<IEmailSender<ApplicationUser>, EmailSender>();
 
         builder.Services.AddQuartz(q =>
         {
