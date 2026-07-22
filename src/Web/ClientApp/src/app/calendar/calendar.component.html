@@ -13,8 +13,6 @@
       <button type="button" class="secondary" [class.active]="viewMode() === 'week'" (click)="setViewMode('week')">Week</button>
       <button type="button" class="secondary" [class.active]="viewMode() === 'month'" (click)="setViewMode('month')">Month</button>
     </div>
-
-    <button type="button" (click)="openNewEventDialog()"><lucide-icon name="plus" [size]="18" [strokeWidth]="2" /> New event</button>
   </div>
 </div>
 
@@ -132,7 +130,6 @@
     <header>
       <h3>
         @switch (dialogMode()) {
-          @case ('create') { New event }
           @case ('edit-local') { Edit event }
           @default { Event }
         }

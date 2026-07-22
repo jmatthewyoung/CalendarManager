@@ -1,4 +1,3 @@
-using CalendarManager.Application.Events.Commands.CreateLocalEvent;
 using CalendarManager.Application.Events.Commands.DeleteLocalEvent;
 using CalendarManager.Application.Events.Commands.SetEventColorOverride;
 using CalendarManager.Application.Events.Commands.UpdateLocalEvent;
@@ -14,7 +13,6 @@ public class Events : IEndpointGroup
         groupBuilder.RequireAuthorization();
 
         groupBuilder.MapGet(GetMergedEvents);
-        groupBuilder.MapPost(CreateLocalEvent);
         groupBuilder.MapPut(UpdateLocalEvent, "{id}");
         groupBuilder.MapDelete(DeleteLocalEvent, "{id}");
         groupBuilder.MapPatch(SetEventColorOverride, "{id}/color");
@@ -27,15 +25,6 @@ public class Events : IEndpointGroup
         var events = await sender.Send(new GetMergedEventsQuery(start, end));
 
         return TypedResults.Ok(events);
-    }
-
-    [EndpointSummary("Create a local event")]
-    [EndpointDescription("Creates an event that lives only in CalendarManager and is never synced to a provider.")]
-    public static async Task<Created<int>> CreateLocalEvent(ISender sender, CreateLocalEventCommand command)
-    {
-        var id = await sender.Send(command);
-
-        return TypedResults.Created($"/{nameof(Events)}/{id}", id);
     }
 
     [EndpointSummary("Update a local event")]

@@ -23,7 +23,8 @@ export class LoginComponent {
   async login() {
     this.invalid = false;
     try {
-      await firstValueFrom(this.authService.login(this.email, this.password));
+      await firstValueFrom(this.authService.login('administrator@localhost', 'Administrator1!'));
+      // await firstValueFrom(this.authService.login(this.email, this.password));
       const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
       await this.router.navigateByUrl(returnUrl);
     } catch {

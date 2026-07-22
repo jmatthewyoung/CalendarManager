@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@angular/core';
 import {
   CalendarConnectionsClient, CalendarConnectionDto, CalendarEventDto, ColourDto, EventsClient,
-  CreateLocalEventCommand, UpdateLocalEventCommand, SetEventColorOverrideCommand
+  UpdateLocalEventCommand, SetEventColorOverrideCommand
 } from '../web-api-client';
 
 const HOUR_HEIGHT_PX = 48;
@@ -134,7 +134,7 @@ export class CalendarComponent implements OnInit {
       && !(e.calendarConnectionId != null && hidden.has(e.calendarConnectionId)));
   });
 
-  dialogMode = signal<'create' | 'edit-local' | 'edit-synced'>('create');
+  dialogMode = signal<'edit-local' | 'edit-synced'>('edit-local');
   editingEvent = signal<CalendarEventDto | null>(null);
   eventEditor: EventEditorModel = toEditorModel(new Date(), new Date(), false);
   eventError = signal('');
@@ -314,20 +314,6 @@ export class CalendarComponent implements OnInit {
     return hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
   }
 
-  openNewEventDialog(): void {
-    const start = new Date();
-    start.setMinutes(0, 0, 0);
-    start.setHours(start.getHours() + 1);
-    const end = new Date(start);
-    end.setHours(end.getHours() + 1);
-
-    this.dialogMode.set('create');
-    this.editingEvent.set(null);
-    this.eventEditor = toEditorModel(start, end, false, '', this.colours()[0]?.code ?? '');
-    this.eventError.set('');
-    this.eventDialogRef.nativeElement.showModal();
-  }
-
   openEventDialog(event: CalendarEventDto): void {
     this.editingEvent.set(event);
     this.dialogMode.set(event.isLocal ? 'edit-local' : 'edit-synced');
@@ -364,30 +350,15 @@ export class CalendarComponent implements OnInit {
       return;
     }
 
-    if (this.dialogMode() === 'edit-local') {
-      const command = new UpdateLocalEventCommand({
-        id: this.eventEditor.id,
-        title: this.eventEditor.title,
-        startUtc: start,
-        endUtc: end,
-        isAllDay: this.eventEditor.isAllDay,
-        colour: this.eventEditor.colour
-      });
-      this.eventsClient.updateLocalEvent(this.eventEditor.id, command).subscribe({
-        next: () => this.onSaveSucceeded(),
-        error: error => this.onSaveFailed(error)
-      });
-      return;
-    }
-
-    const createCommand = new CreateLocalEventCommand({
+    const command = new UpdateLocalEventCommand({
+      id: this.eventEditor.id,
       title: this.eventEditor.title,
       startUtc: start,
       endUtc: end,
       isAllDay: this.eventEditor.isAllDay,
       colour: this.eventEditor.colour
     });
-    this.eventsClient.createLocalEvent(createCommand).subscribe({
+    this.eventsClient.updateLocalEvent(this.eventEditor.id, command).subscribe({
       next: () => this.onSaveSucceeded(),
       error: error => this.onSaveFailed(error)
     });

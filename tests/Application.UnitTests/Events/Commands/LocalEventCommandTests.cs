@@ -1,5 +1,4 @@
 using CalendarManager.Application.Common.Interfaces;
-using CalendarManager.Application.Events.Commands.CreateLocalEvent;
 using CalendarManager.Application.Events.Commands.DeleteLocalEvent;
 using CalendarManager.Application.Events.Commands.SetEventColorOverride;
 using CalendarManager.Application.Events.Commands.UpdateLocalEvent;
@@ -36,28 +35,6 @@ public class LocalEventCommandTests
     public void TearDown()
     {
         _context.Dispose();
-    }
-
-    [Test]
-    public async Task CreateLocalEventPersistsAnIsLocalRowWithNoConnection()
-    {
-        var handler = new CreateLocalEventCommandHandler(_context, _user.Object);
-
-        var id = await handler.Handle(new CreateLocalEventCommand
-        {
-            Title = "Dentist",
-            StartUtc = new DateTimeOffset(2026, 7, 22, 9, 0, 0, TimeSpan.Zero),
-            EndUtc = new DateTimeOffset(2026, 7, 22, 10, 0, 0, TimeSpan.Zero),
-            IsAllDay = false,
-            Colour = Colour.Blue.Code
-        }, CancellationToken.None);
-
-        var entity = await _context.CalendarEvents.SingleAsync(e => e.Id == id);
-        entity.IsLocal.ShouldBeTrue();
-        entity.CalendarConnectionId.ShouldBeNull();
-        entity.UserId.ShouldBe(UserId);
-        entity.Title.ShouldBe("Dentist");
-        entity.ColourOverride!.Code.ShouldBe(Colour.Blue.Code);
     }
 
     [Test]

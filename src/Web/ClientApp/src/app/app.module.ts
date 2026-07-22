@@ -11,9 +11,6 @@ import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@a
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
-import { CounterComponent } from './counter/counter.component';
-import { WeatherComponent } from './weather/weather.component';
-import { TasksComponent } from './todo/todo.component';
 import { ThemeToggleComponent } from './theme-toggle/theme-toggle.component';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ConnectionsComponent } from './connections/connections.component';
@@ -38,9 +35,6 @@ export function getApiBaseUrl(): string {
         AppComponent,
         NavMenuComponent,
         HomeComponent,
-        CounterComponent,
-        WeatherComponent,
-        TasksComponent,
         ThemeToggleComponent,
         CalendarComponent,
         ConnectionsComponent,
@@ -62,22 +56,19 @@ export function getApiBaseUrl(): string {
             { path: '', component: CalendarComponent, pathMatch: 'full', canActivate: [AuthGuard] },
             { path: 'connections', component: ConnectionsComponent, canActivate: [AuthGuard] },
             { path: 'connections/callback/:provider', component: OAuthCallbackComponent, canActivate: [AuthGuard] },
-            { path: 'counter', component: CounterComponent },
-            { path: 'weather', component: WeatherComponent, canActivate: [AuthGuard] },
-            { path: 'todo', component: TasksComponent, canActivate: [AuthGuard] },
             { path: 'login', component: LoginComponent },
             { path: 'register', component: RegisterComponent },
             { path: 'forgot-password', component: ForgotPasswordComponent },
             { path: 'reset-password', component: ResetPasswordComponent }
         ]),
-        
+
       ServiceWorkerModule.register('ngsw-worker.js', {
         enabled: !isDevMode(),
         // Register the ServiceWorker as soon as the application is stable
         // or after 30 seconds (whichever comes first).
         registrationStrategy: 'registerWhenStable:30000'
       })
-    
+
     ],
     providers: [
         { provide: APP_ID, useValue: 'ng-cli-universal' },
