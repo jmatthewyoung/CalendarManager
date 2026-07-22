@@ -19,33 +19,67 @@
 .calendar-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-top: 0.25rem;
+}
 
-  button.secondary,
-  button[type="button"] {
-    width: auto;
-    margin: 0;
-    padding: 0.35rem 1rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+.date-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  padding: 0.2rem;
+}
+
+.today-btn {
+  width: auto;
+  margin: 0;
+  padding: 0.3rem 0.9rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--pico-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--pico-card-sectioning-background-color);
   }
 }
 
 .view-mode-toggle {
-  display: flex;
-  gap: 0.25rem;
-  margin-inline: 0.25rem;
+  display: inline-flex;
+  gap: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  padding: 0.2rem;
 
   button {
-    padding: 0.3rem 0.8rem !important;
+    width: auto;
+    margin: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    border-radius: 999px !important;
+    padding: 0.3rem 0.9rem !important;
     font-size: 0.85rem;
+    color: var(--pico-muted-color);
+    cursor: pointer;
 
     &.active {
       background: var(--pico-primary);
       color: var(--pico-primary-inverse);
-      border-color: var(--pico-primary);
+    }
+
+    &:not(.active):hover {
+      color: var(--pico-color);
+      background: var(--pico-card-sectioning-background-color);
     }
   }
 }
@@ -101,17 +135,26 @@
 }
 
 .search-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  color: var(--pico-muted-color);
-  flex-shrink: 0;
+  flex: 1 1 14rem;
+  max-width: 18rem;
 
-  input[type="search"] {
+  lucide-icon {
+    position: absolute;
+    left: 0.75rem;
+    display: flex;
+    color: var(--pico-muted-color);
+    pointer-events: none;
+  }
+
+  input[type="text"] {
     margin: 0;
-    padding: 0.3rem 0.6rem;
+    width: 100%;
+    padding: 0.35rem 0.75rem 0.35rem 2.15rem;
     font-size: 0.85rem;
-    width: 14rem;
+    border-radius: 999px;
   }
 }
 
@@ -143,6 +186,7 @@ $time-gutter-width: 3.5rem;
 }
 
 .day-header {
+  min-width: 0;
   text-align: center;
   padding: 0.5rem 0.25rem;
   border-left: 1px solid var(--pico-muted-border-color);
@@ -171,6 +215,7 @@ $time-gutter-width: 3.5rem;
 }
 
 .allday-cell {
+  min-width: 0;
   border-left: 1px solid var(--pico-muted-border-color);
   padding: 0.2rem;
   display: flex;
@@ -211,6 +256,7 @@ $time-gutter-width: 3.5rem;
 
 .day-column {
   position: relative;
+  min-width: 0;
   border-left: 1px solid var(--pico-muted-border-color);
 
   &.today {
@@ -283,6 +329,7 @@ $time-gutter-width: 3.5rem;
 
 .month-cell {
   min-height: 6.5rem;
+  min-width: 0;
   padding: 0.25rem;
   border-left: 1px solid var(--pico-muted-border-color);
   display: flex;
@@ -332,16 +379,22 @@ $time-gutter-width: 3.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
+  min-width: 0;
 }
 
 .month-event-chip {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-width: 0;
   font-size: 0.7rem;
+  line-height: 1.3;
   color: #fff;
-  padding: 0.05rem 0.35rem;
+  padding: 0.1rem 0.35rem;
   border-radius: 0.2rem;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
   cursor: pointer;
 }
 
@@ -372,5 +425,72 @@ $time-gutter-width: 3.5rem;
 
   label {
     margin-bottom: 0.25rem;
+  }
+}
+
+// ── Mobile ──────────────────────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .calendar-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .calendar-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .date-nav,
+  .view-mode-toggle {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .calendar-toolbar {
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .week-grid.multi-day {
+    overflow-x: auto;
+
+    .week-grid-header,
+    .week-grid-allday,
+    .week-grid-body {
+      min-width: 34rem;
+    }
+  }
+
+  .month-cell {
+    min-height: 4rem;
+    padding: 0.15rem;
+  }
+
+  .month-event-chip {
+    -webkit-line-clamp: 1;
+    font-size: 0.62rem;
+  }
+
+  .month-day-number {
+    width: 1.4rem;
+    height: 1.4rem;
+    font-size: 0.7rem;
+  }
+
+  .month-day-name {
+    font-size: 0.6rem;
+  }
+
+  .event-time-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+
+    input[type="time"] {
+      max-width: none;
+    }
   }
 }

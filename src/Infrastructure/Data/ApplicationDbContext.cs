@@ -11,10 +11,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    public DbSet<TodoList> TodoLists => Set<TodoList>();
-
-    public DbSet<TodoItem> TodoItems => Set<TodoItem>();
-
     public DbSet<CalendarConnection> CalendarConnections => Set<CalendarConnection>();
 
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();

@@ -158,7 +158,7 @@
               <span class="provider-badge" [class]="providerClass(entry.provider)">{{ providerName(entry.provider) }}</span>
               {{ entry.accountEmail }}
             </span>
-            <span class="activity-time" style="grid-column: 3 / span 2">{{ entry.occurredAtUtc | date:'short' }}</span>
+            <span class="activity-time audit-timestamp">{{ entry.occurredAtUtc | date:'short' }}</span>
           </div>
         }
       }

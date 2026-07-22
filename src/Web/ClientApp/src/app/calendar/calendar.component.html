@@ -4,14 +4,16 @@
     <p>{{ rangeLabel() }}</p>
   </hgroup>
   <div class="calendar-nav">
-    <button class="icon-btn" (click)="previous()" aria-label="Previous"><lucide-icon name="chevron-left" [size]="22" [strokeWidth]="2" /></button>
-    <button class="secondary" (click)="goToToday()">Today</button>
-    <button class="icon-btn" (click)="next()" aria-label="Next"><lucide-icon name="chevron-right" [size]="22" [strokeWidth]="2" /></button>
+    <div class="date-nav">
+      <button class="icon-btn" (click)="previous()" aria-label="Previous"><lucide-icon name="chevron-left" [size]="20" [strokeWidth]="2" /></button>
+      <button type="button" class="today-btn" (click)="goToToday()">Today</button>
+      <button class="icon-btn" (click)="next()" aria-label="Next"><lucide-icon name="chevron-right" [size]="20" [strokeWidth]="2" /></button>
+    </div>
 
     <div class="view-mode-toggle" role="group" aria-label="Calendar view">
-      <button type="button" class="secondary" [class.active]="viewMode() === 'day'" (click)="setViewMode('day')">Day</button>
-      <button type="button" class="secondary" [class.active]="viewMode() === 'week'" (click)="setViewMode('week')">Week</button>
-      <button type="button" class="secondary" [class.active]="viewMode() === 'month'" (click)="setViewMode('month')">Month</button>
+      <button type="button" [class.active]="viewMode() === 'day'" (click)="setViewMode('day')">Day</button>
+      <button type="button" [class.active]="viewMode() === 'week'" (click)="setViewMode('week')">Week</button>
+      <button type="button" [class.active]="viewMode() === 'month'" (click)="setViewMode('month')">Month</button>
     </div>
   </div>
 </div>
@@ -33,13 +35,13 @@
     </div>
     <div class="search-box">
       <lucide-icon name="search" [size]="16" [strokeWidth]="2" />
-      <input type="search" placeholder="Search events&hellip;" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      <input type="text" placeholder="Search events&hellip;" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
     </div>
   </div>
 }
 
 @if (viewMode() !== 'month') {
-  <div class="week-grid" [class.loading]="loading()">
+  <div class="week-grid" [class.loading]="loading()" [class.multi-day]="days().length > 1">
     <!-- Day headers -->
     <div class="week-grid-header" [style.grid-template-columns]="gridTemplateColumns()">
       <div class="time-gutter"></div>

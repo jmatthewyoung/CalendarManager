@@ -1,7 +1,8 @@
 using System.Runtime.CompilerServices;
 using AutoMapper;
+using CalendarManager.Application.CalendarConnections.Queries.GetCalendarConnections;
 using CalendarManager.Application.Common.Interfaces;
-using CalendarManager.Application.TodoLists.Queries.GetTodos;
+using CalendarManager.Application.Sync.Queries.GetSyncLogs;
 using CalendarManager.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
@@ -34,8 +35,8 @@ public class MappingTests
     }
 
     [Test]
-    [TestCase(typeof(TodoList), typeof(TodoListDto))]
-    [TestCase(typeof(TodoItem), typeof(TodoItemDto))]
+    [TestCase(typeof(CalendarConnection), typeof(CalendarConnectionDto))]
+    [TestCase(typeof(SyncLog), typeof(SyncLogDto))]
     public void ShouldSupportMappingFromSourceToDestination(Type source, Type destination)
     {
         var instance = GetInstanceOf(source);

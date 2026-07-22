@@ -1,22 +1,28 @@
 <header>
   <nav>
     <ul>
-      <li><a class="nav-brand" [routerLink]="['/']">CalendarManager</a></li>
+      <li><a class="nav-brand" [routerLink]="['/']" (click)="closeMenu()">CalendarManager</a></li>
     </ul>
-    <ul>
-      <li><a [routerLink]="['/']" [routerLinkActive]="['pico-active']" [routerLinkActiveOptions]="{ exact: true }">Calendar</a></li>
-      <li><a [routerLink]="['/connections']" [routerLinkActive]="['pico-active']">Connections</a></li>
-      <li><a [routerLink]="['/todo']" [routerLinkActive]="['pico-active']">Tasks</a></li>
-    </ul>
-    <ul>
-      @if (isAuthenticated$ | async) {
-        <li><a href="#" (click)="logout($event)">Log out</a></li>
-      } @else {
-        <li><a [routerLink]="['/login']" [routerLinkActive]="['pico-active']">Log in</a></li>
-        <li><a [routerLink]="['/register']" [routerLinkActive]="['pico-active']">Register</a></li>
-      }
-      <li aria-hidden="true" class="nav-separator"></li>
-      <li><app-theme-toggle /></li>
-    </ul>
+
+    <button type="button" class="nav-toggle icon-btn" aria-label="Toggle menu" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">
+      <lucide-icon [name]="menuOpen() ? 'x' : 'menu'" [size]="22" [strokeWidth]="2" />
+    </button>
+
+    <div class="nav-links" [class.open]="menuOpen()">
+      <ul>
+        <li><a [routerLink]="['/']" [routerLinkActive]="['pico-active']" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Calendar</a></li>
+        <li><a [routerLink]="['/connections']" [routerLinkActive]="['pico-active']" (click)="closeMenu()">Connections</a></li>
+      </ul>
+      <ul>
+        @if (isAuthenticated$ | async) {
+          <li><a href="#" (click)="logout($event)">Log out</a></li>
+        } @else {
+          <li><a [routerLink]="['/login']" [routerLinkActive]="['pico-active']" (click)="closeMenu()">Log in</a></li>
+          <li><a [routerLink]="['/register']" [routerLinkActive]="['pico-active']" (click)="closeMenu()">Register</a></li>
+        }
+        <li aria-hidden="true" class="nav-separator"></li>
+        <li><app-theme-toggle /></li>
+      </ul>
+    </div>
   </nav>
 </header>

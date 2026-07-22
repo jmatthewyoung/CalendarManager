@@ -75,7 +75,7 @@ app-root > main:has(> app-login, > app-register, > app-forgot-password, > app-re
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--header-height));
 
   > app-login,
   > app-register,
@@ -111,6 +111,71 @@ app-root > main:has(> app-login, > app-register, > app-forgot-password, > app-re
   background: var(--pico-muted-border-color);
   padding: 0;
   margin-inline: 0.25rem;
+}
+
+// ── Nav links / mobile hamburger ───────────────────────────────────────────────
+.nav-toggle {
+  display: none;
+}
+
+app-nav-menu > header nav > .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  app-nav-menu > header nav {
+    position: relative;
+  }
+
+  app-nav-menu > header nav > ul:first-child a {
+    font-size: 1.4rem;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  app-nav-menu > header nav > .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--pico-background-color);
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.35);
+    padding: 0.5rem 0;
+
+    &.open {
+      display: flex;
+    }
+
+    ul {
+      flex-direction: column;
+      align-items: stretch;
+      margin: 0 !important;
+      gap: 0;
+    }
+
+    li {
+      padding: 0.25rem var(--pico-block-spacing-horizontal);
+
+      a {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 0;
+      }
+    }
+
+    .nav-separator {
+      display: none;
+    }
+  }
 }
 
 // ── Theme toggle ───────────────────────────────────────────────────────────────
@@ -159,117 +224,11 @@ app-root > main:has(> app-login, > app-register, > app-forgot-password, > app-re
   }
 }
 
-// ── Todo layout ───────────────────────────────────────────────────────────────
-.todo-layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: calc(var(--pico-block-spacing-horizontal) * 2);
-  align-items: start;
-}
-
-.todo-sidebar {
-  border-right: 1px solid var(--pico-muted-border-color);
-  padding-right: calc(var(--pico-block-spacing-horizontal) * 2);
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+@media (max-width: 640px) {
+  .icon-btn {
+    width: 2.75rem;
+    height: 2.75rem;
   }
-
-  li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: calc(var(--pico-spacing) * 0.4) calc(var(--pico-spacing) * 0.5);
-    border-radius: var(--pico-border-radius);
-    cursor: pointer;
-    color: var(--pico-muted-color);
-
-    &[aria-current="true"] {
-      background: var(--pico-primary-background);
-      color: var(--pico-primary-inverse);
-    }
-
-    &:hover:not([aria-current="true"]) {
-      background: var(--pico-card-sectioning-background-color);
-      color: var(--pico-color);
-    }
-
-    small {
-      font-size: 0.75rem;
-      opacity: 0.7;
-    }
-  }
-}
-
-.todo-main {
-  min-width: 0;
-  padding-left: var(--pico-spacing);
-}
-
-.todo-panel-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
-  margin-bottom: var(--pico-spacing);
-}
-
-.todo-item {
-  display: flex;
-  align-items: baseline;
-  gap: calc(var(--pico-spacing) * 0.5);
-  padding-block: calc(var(--pico-spacing) * 0.35);
-  border-bottom: 1px solid var(--pico-muted-border-color);
-
-  input[type="checkbox"] {
-    margin: 0;
-    flex-shrink: 0;
-    align-self: center;
-  }
-}
-
-.todo-item-text {
-  flex: 1;
-  cursor: pointer;
-  word-break: break-word;
-}
-
-.todo-done {
-  text-decoration: line-through;
-  color: var(--pico-muted-color);
-}
-
-.todo-item-input {
-  flex: 1;
-  align-self: center;
-  margin: 0 !important;
-  padding: 0;
-  min-height: unset;
-  --pico-form-element-spacing-horizontal: 0;
-  --pico-form-element-spacing-vertical: 0;
-  border: none;
-  border-bottom: 1px solid var(--pico-primary);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-
-  &:not(:focus) {
-    border-bottom-color: transparent;
-  }
-}
-
-.todo-new-item {
-  border-bottom: none;
-
-  input[type="checkbox"] {
-    opacity: 0.3;
-  }
-}
-
-.todo-new-item-placeholder {
-  color: var(--pico-muted-color);
-  cursor: pointer;
 }
 
 .colour-dot {
@@ -282,6 +241,7 @@ app-root > main:has(> app-login, > app-register, > app-forgot-password, > app-re
 
 .colour-picker {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: var(--pico-spacing);
 }
@@ -323,6 +283,18 @@ dialog article footer {
   justify-content: flex-end;
   align-items: center;
   gap: calc(var(--pico-spacing) * 0.5);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 400px) {
+  dialog article footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+
+    button {
+      margin-inline-end: 0 !important;
+    }
+  }
 }
 
 // ── Button variants (not compiled in classless mode — defined manually) ───────
