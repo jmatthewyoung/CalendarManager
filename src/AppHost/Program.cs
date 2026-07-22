@@ -27,7 +27,7 @@ if (builder.ExecutionContext.IsRunMode)
         .WithRunScript("start")
         .WithReference(web)
         .WaitFor(web)
-        .WithHttpEndpoint(env: "PORT")
+        .WithHttpEndpoint(port: 5001, env: "PORT")
         .WithExternalHttpEndpoints();
 }
 
