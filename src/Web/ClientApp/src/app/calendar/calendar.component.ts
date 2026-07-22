@@ -1,12 +1,17 @@
 import { Component, ElementRef, OnInit, ViewChild, computed, signal } from '@angular/core';
-import {
-  CalendarConnectionsClient, CalendarConnectionDto, CalendarEventDto, ColourDto, EventsClient,
-  UpdateLocalEventCommand, SetEventColorOverrideCommand
-} from '../web-api-client';
+import { CalendarConnectionsClient, CalendarConnectionDto, CalendarEventDto, EventsClient } from '../web-api-client';
 
 const HOUR_HEIGHT_PX = 48;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Default scroll target (8 AM) when a day view has no timed events to scroll to. */
+const DEFAULT_DAY_SCROLL_HOUR = 8;
+
+/** How far down the visible viewport the first event of the day should land when day view opens. */
+const DAY_SCROLL_TARGET_FRACTION = 0.2;
+
+const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
 interface PositionedEvent {
   event: CalendarEventDto;
@@ -57,48 +62,6 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function pad(n: number): string {
-  return n < 10 ? `0${n}` : `${n}`;
-}
-
-function toDateTimeLocal(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function toDateOnly(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-interface EventEditorModel {
-  id: number;
-  title: string;
-  isAllDay: boolean;
-  startDate: string;
-  startTime: string;
-  endDate: string;
-  endTime: string;
-  colour: string;
-}
-
-function toEditorModel(start: Date, end: Date, isAllDay: boolean, title = '', colour = ''): EventEditorModel {
-  return {
-    id: 0,
-    title,
-    isAllDay,
-    startDate: toDateOnly(start),
-    startTime: toDateTimeLocal(start).split('T')[1],
-    endDate: toDateOnly(end),
-    endTime: toDateTimeLocal(end).split('T')[1],
-    colour
-  };
-}
-
-function editorModelToRange(model: EventEditorModel): { start: Date; end: Date } {
-  const start = model.isAllDay ? new Date(`${model.startDate}T00:00`) : new Date(`${model.startDate}T${model.startTime}`);
-  const end = model.isAllDay ? new Date(`${model.endDate}T23:59`) : new Date(`${model.endDate}T${model.endTime}`);
-  return { start, end };
-}
-
 @Component({
   standalone: false,
   selector: 'app-calendar',
@@ -107,6 +70,7 @@ function editorModelToRange(model: EventEditorModel): { start: Date; end: Date }
 })
 export class CalendarComponent implements OnInit {
   @ViewChild('eventDialog') eventDialogRef: ElementRef<HTMLDialogElement>;
+  @ViewChild('gridBody') gridBodyRef?: ElementRef<HTMLDivElement>;
 
   readonly hourHeightPx = HOUR_HEIGHT_PX;
   readonly hours = Array.from({ length: 24 }, (_, i) => i);
@@ -117,11 +81,12 @@ export class CalendarComponent implements OnInit {
   anchorDate = signal(new Date());
   events = signal<CalendarEventDto[] | null>(null);
   connections = signal<CalendarConnectionDto[]>([]);
-  colours = signal<ColourDto[]>([]);
   loading = signal(false);
 
   searchQuery = signal('');
   hiddenConnectionIds = signal<ReadonlySet<number>>(new Set());
+
+  selectedEvent = signal<CalendarEventDto | null>(null);
 
   /** events() narrowed by the in-view search box and any transiently hidden calendars (legend toggles). */
   filteredEvents = computed(() => {
@@ -134,12 +99,6 @@ export class CalendarComponent implements OnInit {
       && !(e.calendarConnectionId != null && hidden.has(e.calendarConnectionId)));
   });
 
-  dialogMode = signal<'edit-local' | 'edit-synced'>('edit-local');
-  editingEvent = signal<CalendarEventDto | null>(null);
-  eventEditor: EventEditorModel = toEditorModel(new Date(), new Date(), false);
-  eventError = signal('');
-  saving = signal(false);
-
   /** The hour-grid days for day/week view. Month view uses monthWeeks() instead. */
   days = computed(() => {
     if (this.viewMode() === 'day') {
@@ -147,6 +106,12 @@ export class CalendarComponent implements OnInit {
     }
     const start = startOfWeek(this.anchorDate());
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  });
+
+  /** Whether each entry in days() has at least one event, timed or all-day. */
+  dayHasEvents = computed(() => {
+    const events = this.filteredEvents();
+    return this.days().map(day => events.some(e => isSameDay(new Date(e.startUtc!), day)));
   });
 
   monthWeeks = computed(() => {
@@ -205,10 +170,7 @@ export class CalendarComponent implements OnInit {
 
   ngOnInit(): void {
     this.connectionsClient.getCalendarConnections().subscribe({
-      next: vm => {
-        this.connections.set((vm.connections ?? []).filter(c => c.isVisible));
-        this.colours.set(vm.colours ?? []);
-      },
+      next: vm => this.connections.set((vm.connections ?? []).filter(c => c.isVisible)),
       error: error => console.error(error)
     });
 
@@ -223,6 +185,7 @@ export class CalendarComponent implements OnInit {
       next: events => {
         this.events.set(events);
         this.loading.set(false);
+        this.scrollDayViewToFirstEvent();
       },
       error: error => {
         console.error(error);
@@ -315,74 +278,68 @@ export class CalendarComponent implements OnInit {
   }
 
   openEventDialog(event: CalendarEventDto): void {
-    this.editingEvent.set(event);
-    this.dialogMode.set(event.isLocal ? 'edit-local' : 'edit-synced');
-    this.eventEditor = {
-      ...toEditorModel(new Date(event.startUtc!), new Date(event.endUtc!), !!event.isAllDay, event.title, event.colour ?? this.colours()[0]?.code ?? ''),
-      id: event.id!
-    };
-    this.eventError.set('');
+    this.selectedEvent.set(event);
     this.eventDialogRef.nativeElement.showModal();
   }
 
   closeEventDialog(): void {
     this.eventDialogRef.nativeElement.close();
-    this.editingEvent.set(null);
-    this.eventError.set('');
+    this.selectedEvent.set(null);
   }
 
-  saveEvent(): void {
-    const { start, end } = editorModelToRange(this.eventEditor);
+  formatEventTime(event: CalendarEventDto): string {
+    const start = new Date(event.startUtc!);
+    const end = new Date(event.endUtc!);
+    const dateLabel = `${DAY_NAMES[start.getDay()]}, ${MONTH_NAMES[start.getMonth()]} ${start.getDate()}, ${start.getFullYear()}`;
 
-    if (end <= start) {
-      this.eventError.set('End time must be after the start time.');
-      return;
+    if (event.isAllDay) {
+      return `${dateLabel} · All day`;
     }
 
-    this.saving.set(true);
+    return `${dateLabel} · ${TIME_FORMATTER.format(start)} – ${TIME_FORMATTER.format(end)}`;
+  }
 
-    if (this.dialogMode() === 'edit-synced') {
-      const command = new SetEventColorOverrideCommand({ id: this.eventEditor.id, colour: this.eventEditor.colour });
-      this.eventsClient.setEventColorOverride(this.eventEditor.id, command).subscribe({
-        next: () => this.onSaveSucceeded(),
-        error: error => this.onSaveFailed(error)
-      });
-      return;
+  attendeeStatusIcon(status: number | undefined): string {
+    switch (status) {
+      case 1: return 'x';
+      case 2: return 'help-circle';
+      case 3: return 'check';
+      default: return 'circle';
     }
+  }
 
-    const command = new UpdateLocalEventCommand({
-      id: this.eventEditor.id,
-      title: this.eventEditor.title,
-      startUtc: start,
-      endUtc: end,
-      isAllDay: this.eventEditor.isAllDay,
-      colour: this.eventEditor.colour
-    });
-    this.eventsClient.updateLocalEvent(this.eventEditor.id, command).subscribe({
-      next: () => this.onSaveSucceeded(),
-      error: error => this.onSaveFailed(error)
+  attendeeStatusLabel(status: number | undefined): string {
+    switch (status) {
+      case 1: return 'Declined';
+      case 2: return 'Tentative';
+      case 3: return 'Accepted';
+      default: return 'No response';
+    }
+  }
+
+  /** On day view, scroll the hour grid so the day's first event sits ~20% down the viewport instead of at the very top. */
+  private scrollDayViewToFirstEvent(): void {
+    if (this.viewMode() !== 'day') return;
+
+    requestAnimationFrame(() => {
+      const container = this.gridBodyRef?.nativeElement;
+      if (!container) return;
+
+      const day = this.days()[0];
+      const timedEvents = this.filteredEvents().filter(e => !e.isAllDay && isSameDay(new Date(e.startUtc!), day));
+
+      const firstEventMinutes = timedEvents.length > 0
+        ? Math.min(...timedEvents.map(e => this.minutesSinceMidnight(new Date(e.startUtc!))))
+        : DEFAULT_DAY_SCROLL_HOUR * 60;
+
+      const firstEventTopPx = (firstEventMinutes / 60) * HOUR_HEIGHT_PX;
+      const targetScroll = firstEventTopPx - container.clientHeight * DAY_SCROLL_TARGET_FRACTION;
+      container.scrollTop = Math.max(0, targetScroll);
     });
   }
 
-  deleteEvent(): void {
-    const id = this.eventEditor.id;
-    this.saving.set(true);
-    this.eventsClient.deleteLocalEvent(id).subscribe({
-      next: () => this.onSaveSucceeded(),
-      error: error => this.onSaveFailed(error)
-    });
-  }
-
-  private onSaveSucceeded(): void {
-    this.saving.set(false);
-    this.closeEventDialog();
-    this.loadEvents();
-  }
-
-  private onSaveFailed(error: unknown): void {
-    console.error(error);
-    this.saving.set(false);
-    this.eventError.set('Could not save the event. Please try again.');
+  private minutesSinceMidnight(date: Date): number {
+    return date.getHours() * 60 + date.getMinutes();
   }
 
   private layoutDay(events: CalendarEventDto[], day: Date): PositionedEvent[] {

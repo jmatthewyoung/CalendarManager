@@ -110,7 +110,20 @@ public class GoogleCalendarClient : ICalendarProviderClient
                 var (eventStart, isAllDay) = ParseDateTime(item.Start);
                 var (eventEnd, _) = ParseDateTime(item.End);
 
-                events.Add(new ProviderEvent(item.Id, item.Summary ?? "(No title)", eventStart, eventEnd, isAllDay));
+                var attendees = (item.Attendees ?? [])
+                    .Where(a => !string.IsNullOrEmpty(a.Email))
+                    .Select(a => new ProviderAttendee(a.Email!, a.DisplayName, MapResponseStatus(a.ResponseStatus)))
+                    .ToList();
+
+                events.Add(new ProviderEvent(
+                    item.Id,
+                    item.Summary ?? "(No title)",
+                    eventStart,
+                    eventEnd,
+                    isAllDay,
+                    item.Organizer?.Email,
+                    item.Organizer?.DisplayName,
+                    attendees));
             }
 
             pageToken = payload.NextPageToken;
@@ -136,6 +149,14 @@ public class GoogleCalendarClient : ICalendarProviderClient
 
         return payload.AccessToken;
     }
+
+    private static AttendeeResponseStatus MapResponseStatus(string? status) => status switch
+    {
+        "accepted" => AttendeeResponseStatus.Accepted,
+        "declined" => AttendeeResponseStatus.Declined,
+        "tentative" => AttendeeResponseStatus.Tentative,
+        _ => AttendeeResponseStatus.NeedsAction
+    };
 
     private static (DateTimeOffset Value, bool IsAllDay) ParseDateTime(GoogleEventDateTime? dateTime)
     {
@@ -211,6 +232,12 @@ public class GoogleCalendarClient : ICalendarProviderClient
 
         [JsonPropertyName("end")]
         public GoogleEventDateTime? End { get; set; }
+
+        [JsonPropertyName("organizer")]
+        public GoogleEventPerson? Organizer { get; set; }
+
+        [JsonPropertyName("attendees")]
+        public List<GoogleEventAttendee>? Attendees { get; set; }
     }
 
     private class GoogleEventDateTime
@@ -220,5 +247,26 @@ public class GoogleCalendarClient : ICalendarProviderClient
 
         [JsonPropertyName("dateTime")]
         public DateTimeOffset? DateTimeValue { get; set; }
+    }
+
+    private class GoogleEventPerson
+    {
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string? DisplayName { get; set; }
+    }
+
+    private class GoogleEventAttendee
+    {
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string? DisplayName { get; set; }
+
+        [JsonPropertyName("responseStatus")]
+        public string? ResponseStatus { get; set; }
     }
 }

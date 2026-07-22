@@ -23,6 +23,7 @@ public class GetMergedEventsQueryHandler : IRequestHandler<GetMergedEventsQuery,
         var events = await _context.CalendarEvents
             .AsNoTracking()
             .Include(e => e.Connection)
+            .Include(e => e.Attendees)
             .Where(e => e.UserId == _user.Id
                      && (e.IsLocal || e.Connection!.IsVisible)
                      && e.StartUtc < request.End
@@ -39,7 +40,16 @@ public class GetMergedEventsQueryHandler : IRequestHandler<GetMergedEventsQuery,
             IsAllDay = e.IsAllDay,
             IsLocal = e.IsLocal,
             Colour = e.ColourOverride?.Code ?? e.Connection?.Colour.Code,
-            Provider = e.IsLocal ? CalendarProvider.Local : e.Connection!.Provider
+            Provider = e.IsLocal ? CalendarProvider.Local : e.Connection!.Provider,
+            AccountEmail = e.Connection?.AccountEmail,
+            OrganizerEmail = e.OrganizerEmail,
+            OrganizerName = e.OrganizerName,
+            Attendees = e.Attendees.Select(a => new AttendeeDto
+            {
+                Email = a.Email,
+                Name = a.Name,
+                ResponseStatus = a.ResponseStatus
+            }).ToList()
         }).ToList();
     }
 }

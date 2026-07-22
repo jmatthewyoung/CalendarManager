@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import {
   LucideAngularModule, Sun, Moon, Laptop, Plus, Settings, MoreHorizontal,
-  RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2, Search, Menu, X
+  RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2, Search, Menu, X,
+  Check, HelpCircle, Circle, Ban
 } from 'lucide-angular';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
@@ -50,7 +51,8 @@ export function getApiBaseUrl(): string {
         FormsModule,
         LucideAngularModule.pick({
             Sun, Moon, Laptop, Plus, Settings, MoreHorizontal,
-            RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2, Search, Menu, X
+            RefreshCw, Trash2, ChevronLeft, ChevronRight, CalendarDays, Link2, Search, Menu, X,
+            Check, HelpCircle, Circle, Ban
         }),
         RouterModule.forRoot([
             { path: '', component: CalendarComponent, pathMatch: 'full', canActivate: [AuthGuard] },

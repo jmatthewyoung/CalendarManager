@@ -54,6 +54,7 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
             var providerEvents = await client.GetEventsAsync(refreshToken, windowStart, windowEnd, cancellationToken);
 
             var existingEvents = await _context.CalendarEvents
+                .Include(e => e.Attendees)
                 .Where(e => e.CalendarConnectionId == connection.Id)
                 .ToListAsync(cancellationToken);
 
@@ -64,15 +65,37 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
             {
                 if (existingByExternalId.TryGetValue(providerEvent.ExternalEventId, out var existing))
                 {
+                    var attendeesChanged = !AttendeesEqual(existing.Attendees, providerEvent.Attendees);
+
                     if (existing.Title != providerEvent.Title
                         || existing.StartUtc != providerEvent.StartUtc
                         || existing.EndUtc != providerEvent.EndUtc
-                        || existing.IsAllDay != providerEvent.IsAllDay)
+                        || existing.IsAllDay != providerEvent.IsAllDay
+                        || existing.OrganizerEmail != providerEvent.OrganizerEmail
+                        || existing.OrganizerName != providerEvent.OrganizerName
+                        || attendeesChanged)
                     {
                         existing.Title = providerEvent.Title;
                         existing.StartUtc = providerEvent.StartUtc;
                         existing.EndUtc = providerEvent.EndUtc;
                         existing.IsAllDay = providerEvent.IsAllDay;
+                        existing.OrganizerEmail = providerEvent.OrganizerEmail;
+                        existing.OrganizerName = providerEvent.OrganizerName;
+
+                        if (attendeesChanged)
+                        {
+                            existing.Attendees.Clear();
+                            foreach (var attendee in providerEvent.Attendees)
+                            {
+                                existing.Attendees.Add(new EventAttendee
+                                {
+                                    Email = attendee.Email,
+                                    Name = attendee.Name,
+                                    ResponseStatus = attendee.ResponseStatus
+                                });
+                            }
+                        }
+
                         log.EventsUpdated++;
                     }
                 }
@@ -86,7 +109,15 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
                         Title = providerEvent.Title,
                         StartUtc = providerEvent.StartUtc,
                         EndUtc = providerEvent.EndUtc,
-                        IsAllDay = providerEvent.IsAllDay
+                        IsAllDay = providerEvent.IsAllDay,
+                        OrganizerEmail = providerEvent.OrganizerEmail,
+                        OrganizerName = providerEvent.OrganizerName,
+                        Attendees = providerEvent.Attendees.Select(a => new EventAttendee
+                        {
+                            Email = a.Email,
+                            Name = a.Name,
+                            ResponseStatus = a.ResponseStatus
+                        }).ToList()
                     });
                     log.EventsAdded++;
                 }
@@ -124,6 +155,23 @@ public class SyncCalendarConnectionCommandHandler : IRequestHandler<SyncCalendar
         _context.SyncLogs.Add(log);
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool AttendeesEqual(ICollection<EventAttendee> existing, IReadOnlyList<ProviderAttendee> incoming)
+    {
+        if (existing.Count != incoming.Count) return false;
+
+        var existingSet = existing
+            .Select(a => (a.Email, a.Name, a.ResponseStatus))
+            .OrderBy(a => a.Email, StringComparer.Ordinal)
+            .ToList();
+
+        var incomingSet = incoming
+            .Select(a => (a.Email, a.Name, a.ResponseStatus))
+            .OrderBy(a => a.Email, StringComparer.Ordinal)
+            .ToList();
+
+        return existingSet.SequenceEqual(incomingSet);
     }
 
     private async Task NotifyReauthRequiredAsync(CalendarConnection connection, CancellationToken cancellationToken)

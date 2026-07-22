@@ -107,12 +107,20 @@ public class OutlookCalendarClient : ICalendarProviderClient
 
             foreach (var item in payload.Value ?? [])
             {
+                var attendees = (item.Attendees ?? [])
+                    .Where(a => !string.IsNullOrEmpty(a.EmailAddress?.Address))
+                    .Select(a => new ProviderAttendee(a.EmailAddress!.Address!, a.EmailAddress.Name, MapResponseStatus(a.Status?.Response)))
+                    .ToList();
+
                 events.Add(new ProviderEvent(
                     item.Id,
                     item.Subject ?? "(No title)",
                     DateTimeOffset.Parse(item.Start!.DateTime + "Z"),
                     DateTimeOffset.Parse(item.End!.DateTime + "Z"),
-                    item.IsAllDay));
+                    item.IsAllDay,
+                    item.Organizer?.EmailAddress?.Address,
+                    item.Organizer?.EmailAddress?.Name,
+                    attendees));
             }
 
             nextLink = payload.NextLink;
@@ -139,6 +147,14 @@ public class OutlookCalendarClient : ICalendarProviderClient
 
         return payload.AccessToken;
     }
+
+    private static AttendeeResponseStatus MapResponseStatus(string? response) => response switch
+    {
+        "accepted" or "organizer" => AttendeeResponseStatus.Accepted,
+        "declined" => AttendeeResponseStatus.Declined,
+        "tentativelyAccepted" => AttendeeResponseStatus.Tentative,
+        _ => AttendeeResponseStatus.NeedsAction
+    };
 
     private static async Task ThrowIfAuthFailureAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
@@ -200,11 +216,47 @@ public class OutlookCalendarClient : ICalendarProviderClient
 
         [JsonPropertyName("end")]
         public GraphDateTimeTimeZone? End { get; set; }
+
+        [JsonPropertyName("organizer")]
+        public GraphRecipient? Organizer { get; set; }
+
+        [JsonPropertyName("attendees")]
+        public List<GraphAttendee>? Attendees { get; set; }
     }
 
     private class GraphDateTimeTimeZone
     {
         [JsonPropertyName("dateTime")]
         public string DateTime { get; set; } = string.Empty;
+    }
+
+    private class GraphRecipient
+    {
+        [JsonPropertyName("emailAddress")]
+        public GraphEmailAddress? EmailAddress { get; set; }
+    }
+
+    private class GraphAttendee
+    {
+        [JsonPropertyName("emailAddress")]
+        public GraphEmailAddress? EmailAddress { get; set; }
+
+        [JsonPropertyName("status")]
+        public GraphResponseStatus? Status { get; set; }
+    }
+
+    private class GraphEmailAddress
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("address")]
+        public string? Address { get; set; }
+    }
+
+    private class GraphResponseStatus
+    {
+        [JsonPropertyName("response")]
+        public string? Response { get; set; }
     }
 }

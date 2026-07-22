@@ -75,7 +75,7 @@ public class SyncCalendarConnectionCommandHandlerTests
         var connection = await AddConnectionAsync();
 
         _client.Setup(c => c.GetEventsAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new ProviderEvent("ext-1", "Standup", Now.AddHours(1), Now.AddHours(2), false)]);
+            .ReturnsAsync([new ProviderEvent("ext-1", "Standup", Now.AddHours(1), Now.AddHours(2), false, null, null, [])]);
 
         await _handler.Handle(new SyncCalendarConnectionCommand(connection.Id), CancellationToken.None);
 
@@ -111,7 +111,7 @@ public class SyncCalendarConnectionCommandHandlerTests
         await _context.SaveChangesAsync(CancellationToken.None);
 
         _client.Setup(c => c.GetEventsAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new ProviderEvent("ext-1", "New title", Now.AddHours(1), Now.AddHours(2), false)]);
+            .ReturnsAsync([new ProviderEvent("ext-1", "New title", Now.AddHours(1), Now.AddHours(2), false, null, null, [])]);
 
         await _handler.Handle(new SyncCalendarConnectionCommand(connection.Id), CancellationToken.None);
 
@@ -122,6 +122,57 @@ public class SyncCalendarConnectionCommandHandlerTests
         var log = await _context.SyncLogs.SingleAsync();
         log.EventsUpdated.ShouldBe(1);
         log.EventsAdded.ShouldBe(0);
+    }
+
+    [Test]
+    public async Task NewProviderEventPersistsOrganizerAndAttendees()
+    {
+        var connection = await AddConnectionAsync();
+
+        _client.Setup(c => c.GetEventsAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new ProviderEvent("ext-1", "Standup", Now.AddHours(1), Now.AddHours(2), false,
+                "boss@example.com", "The Boss",
+                [new ProviderAttendee("teammate@example.com", "Teammate", AttendeeResponseStatus.Accepted)])]);
+
+        await _handler.Handle(new SyncCalendarConnectionCommand(connection.Id), CancellationToken.None);
+
+        var saved = await _context.CalendarEvents.Include(e => e.Attendees).SingleAsync();
+        saved.OrganizerEmail.ShouldBe("boss@example.com");
+        saved.OrganizerName.ShouldBe("The Boss");
+        saved.Attendees.Count.ShouldBe(1);
+        saved.Attendees.Single().Email.ShouldBe("teammate@example.com");
+        saved.Attendees.Single().ResponseStatus.ShouldBe(AttendeeResponseStatus.Accepted);
+    }
+
+    [Test]
+    public async Task ChangedAttendeeResponseStatusUpdatesTheExistingRow()
+    {
+        var connection = await AddConnectionAsync();
+        var existing = new CalendarEvent
+        {
+            CalendarConnectionId = connection.Id,
+            UserId = connection.UserId,
+            ExternalEventId = "ext-1",
+            Title = "Standup",
+            StartUtc = Now.AddHours(1),
+            EndUtc = Now.AddHours(2),
+            Attendees = [new EventAttendee { Email = "teammate@example.com", Name = "Teammate", ResponseStatus = AttendeeResponseStatus.NeedsAction }]
+        };
+        _context.CalendarEvents.Add(existing);
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        _client.Setup(c => c.GetEventsAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new ProviderEvent("ext-1", "Standup", Now.AddHours(1), Now.AddHours(2), false,
+                null, null,
+                [new ProviderAttendee("teammate@example.com", "Teammate", AttendeeResponseStatus.Declined)])]);
+
+        await _handler.Handle(new SyncCalendarConnectionCommand(connection.Id), CancellationToken.None);
+
+        var updated = await _context.CalendarEvents.Include(e => e.Attendees).SingleAsync();
+        updated.Attendees.Single().ResponseStatus.ShouldBe(AttendeeResponseStatus.Declined);
+
+        var log = await _context.SyncLogs.SingleAsync();
+        log.EventsUpdated.ShouldBe(1);
     }
 
     [Test]

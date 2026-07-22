@@ -22,5 +22,11 @@ public class CalendarEvent : BaseAuditableEntity
 
     public DateTimeOffset? ReminderSentAtUtc { get; set; }
 
+    public string? OrganizerEmail { get; set; }
+
+    public string? OrganizerName { get; set; }
+
     public CalendarConnection? Connection { get; set; }
+
+    public ICollection<EventAttendee> Attendees { get; set; } = new List<EventAttendee>();
 }

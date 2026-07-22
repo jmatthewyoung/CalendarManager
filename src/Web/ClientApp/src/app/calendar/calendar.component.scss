@@ -409,23 +409,95 @@ $time-gutter-width: 3.5rem;
   }
 }
 
-.event-time-row {
+// ── Event detail dialog ───────────────────────────────────────────────────────
+.event-detail-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 0.5rem;
-  margin-bottom: var(--pico-spacing);
+  margin-bottom: 0.5rem;
 
-  > div {
-    flex: 1;
+  .colour-dot {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+}
+
+.event-detail-time {
+  color: var(--pico-muted-color);
+  margin-bottom: 0.75rem;
+}
+
+.event-detail-attendees {
+  margin-top: 0.75rem;
+
+  ul {
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
   }
 
-  input[type="time"] {
-    max-width: 9rem;
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
   }
+}
 
-  label {
-    margin-bottom: 0.25rem;
+.attendee-status {
+  flex-shrink: 0;
+}
+
+.attendee-status-0 { color: var(--pico-muted-color); }
+.attendee-status-1 { color: var(--pico-del-color); }
+.attendee-status-2 { color: #d9a441; }
+.attendee-status-3 { color: #2e9e5b; }
+
+// ── Empty-day states (week/day view) ────────────────────────────────────────
+.day-header.no-events {
+  opacity: 0.5;
+}
+
+.day-column.no-events {
+  background: color-mix(in srgb, var(--pico-muted-color) 5%, transparent);
+
+  .hour-line {
+    opacity: 0.25;
   }
+}
+
+.no-events-bubble {
+  position: sticky;
+  top: 1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  margin: 1rem auto 0;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-card-sectioning-background-color);
+  color: var(--pico-muted-color);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.no-events-icon {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 1;
+  width: fit-content;
+  margin: 0.75rem auto 0;
+  color: var(--pico-muted-color);
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 // ── Mobile ──────────────────────────────────────────────────────────────────
@@ -482,15 +554,5 @@ $time-gutter-width: 3.5rem;
 
   .month-day-name {
     font-size: 0.6rem;
-  }
-
-  .event-time-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.35rem;
-
-    input[type="time"] {
-      max-width: none;
-    }
   }
 }

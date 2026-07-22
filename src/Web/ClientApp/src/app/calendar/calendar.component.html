@@ -46,7 +46,7 @@
     <div class="week-grid-header" [style.grid-template-columns]="gridTemplateColumns()">
       <div class="time-gutter"></div>
       @for (day of days(); track $index) {
-        <div class="day-header" [class.today]="isToday(day)">
+        <div class="day-header" [class.today]="isToday(day)" [class.no-events]="!dayHasEvents()[$index]">
           <span class="day-name">{{ dayLabel(day) }}</span>
           <span class="day-number">{{ day.getDate() }}</span>
         </div>
@@ -66,7 +66,7 @@
     </div>
 
     <!-- Scrollable hour grid -->
-    <div class="week-grid-body" [style.grid-template-columns]="gridTemplateColumns()">
+    <div class="week-grid-body" #gridBody [style.grid-template-columns]="gridTemplateColumns()">
       <div class="time-gutter-column">
         @for (hour of hours; track hour) {
           <div class="hour-label" [style.height.px]="hourHeightPx">{{ hourLabel(hour) }}</div>
@@ -74,7 +74,7 @@
       </div>
 
       @for (dayEvents of timedEventsByDay(); track $index; let dayIndex = $index) {
-        <div class="day-column" [class.today]="isToday(days()[dayIndex])" [style.height.px]="gridHeightPx">
+        <div class="day-column" [class.today]="isToday(days()[dayIndex])" [class.no-events]="!dayHasEvents()[dayIndex]" [style.height.px]="gridHeightPx">
           @for (hour of hours; track hour) {
             <div class="hour-line" [style.top.px]="hour * hourHeightPx"></div>
           }
@@ -90,6 +90,18 @@
               role="button" tabindex="0">
               <span class="timed-event-title">{{ positioned.event.title }}</span>
             </div>
+          }
+          @if (!dayHasEvents()[dayIndex]) {
+            @if (days().length === 1) {
+              <div class="no-events-bubble">
+                <lucide-icon name="ban" [size]="16" [strokeWidth]="2" />
+                No events today
+              </div>
+            } @else {
+              <div class="no-events-icon" title="No events" aria-label="No events">
+                <lucide-icon name="ban" [size]="16" [strokeWidth]="1.75" />
+              </div>
+            }
           }
         </div>
       }
@@ -126,75 +138,48 @@
   </div>
 }
 
-<!-- Event dialog: full editor for local events, colour-only for synced events -->
+<!-- Event details: read-only. CalendarManager never edits events, only displays what's synced. -->
 <dialog #eventDialog>
-  <article>
-    <header>
-      <h3>
-        @switch (dialogMode()) {
-          @case ('edit-local') { Edit event }
-          @default { Event }
-        }
-      </h3>
-      <button rel="prev" aria-label="Close" (click)="closeEventDialog()"></button>
-    </header>
+  @if (selectedEvent(); as event) {
+    <article>
+      <header>
+        <h3>{{ event.title }}</h3>
+        <button rel="prev" aria-label="Close" (click)="closeEventDialog()"></button>
+      </header>
 
-    @if (dialogMode() === 'edit-synced') {
-      <p><strong>{{ eventEditor.title }}</strong></p>
-      <p class="muted-empty">
-        Synced from a connected calendar — title and time can't be edited here.
-      </p>
-    } @else {
-      <label for="eventTitle">Title</label>
-      <input type="text" id="eventTitle" placeholder="Event title&hellip;" [(ngModel)]="eventEditor.title" maxlength="1024" />
-
-      <label>
-        <input type="checkbox" [(ngModel)]="eventEditor.isAllDay" />
-        All-day
-      </label>
-
-      <div class="event-time-row">
-        <div>
-          <label for="eventStartDate">Start</label>
-          <input type="date" id="eventStartDate" [(ngModel)]="eventEditor.startDate" />
-        </div>
-        @if (!eventEditor.isAllDay) {
-          <input type="time" aria-label="Start time" [(ngModel)]="eventEditor.startTime" />
-        }
+      <div class="event-detail-row">
+        <span class="colour-dot" [style.background]="event.colour"></span>
+        <span>{{ event.accountEmail || 'Local event' }}</span>
       </div>
 
-      <div class="event-time-row">
-        <div>
-          <label for="eventEndDate">End</label>
-          <input type="date" id="eventEndDate" [(ngModel)]="eventEditor.endDate" />
+      <p class="event-detail-time">{{ formatEventTime(event) }}</p>
+
+      @if (event.organizerEmail) {
+        <div class="event-detail-row">
+          <strong>Organizer</strong>
+          <span>{{ event.organizerName ? event.organizerName + ' — ' + event.organizerEmail : event.organizerEmail }}</span>
         </div>
-        @if (!eventEditor.isAllDay) {
-          <input type="time" aria-label="End time" [(ngModel)]="eventEditor.endTime" />
-        }
-      </div>
-    }
-
-    <label>Colour</label>
-    <div class="colour-picker">
-      @for (c of colours(); track c.code) {
-        <button type="button" class="colour-swatch"
-          [style.background]="c.code"
-          [class.selected]="eventEditor.colour === c.code"
-          [attr.aria-label]="c.name"
-          (click)="eventEditor.colour = c.code!"></button>
       }
-    </div>
 
-    @if (eventError()) {
-      <p class="error">{{ eventError() }}</p>
-    }
-
-    <footer>
-      @if (dialogMode() === 'edit-local') {
-        <button class="danger" style="margin-inline-end: auto" [attr.aria-busy]="saving() ? 'true' : null" (click)="deleteEvent()">Delete</button>
+      @if (event.attendees && event.attendees.length > 0) {
+        <div class="event-detail-attendees">
+          <strong>Attendees</strong>
+          <ul>
+            @for (a of event.attendees; track a.email) {
+              <li>
+                <lucide-icon [name]="attendeeStatusIcon(a.responseStatus)" [size]="14" [strokeWidth]="2"
+                  [class]="'attendee-status attendee-status-' + (a.responseStatus ?? 0)"
+                  [title]="attendeeStatusLabel(a.responseStatus)" [attr.aria-label]="attendeeStatusLabel(a.responseStatus)" />
+                {{ a.name || a.email }}
+              </li>
+            }
+          </ul>
+        </div>
       }
-      <button class="secondary" (click)="closeEventDialog()">Cancel</button>
-      <button [attr.aria-busy]="saving() ? 'true' : null" (click)="saveEvent()">Save</button>
-    </footer>
-  </article>
+
+      <footer>
+        <button class="secondary" (click)="closeEventDialog()">Close</button>
+      </footer>
+    </article>
+  }
 </dialog>

@@ -15,6 +15,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
 
+    public DbSet<EventAttendee> EventAttendees => Set<EventAttendee>();
+
     public DbSet<SyncLog> SyncLogs => Set<SyncLog>();
 
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();

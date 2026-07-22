@@ -8,6 +8,8 @@ public interface IApplicationDbContext
 
     DbSet<CalendarEvent> CalendarEvents { get; }
 
+    DbSet<EventAttendee> EventAttendees { get; }
+
     DbSet<SyncLog> SyncLogs { get; }
 
     DbSet<PushSubscription> PushSubscriptions { get; }

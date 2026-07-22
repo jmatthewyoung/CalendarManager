@@ -4,7 +4,17 @@ namespace CalendarManager.Application.Common.Interfaces;
 
 public record ExternalTokenResponse(string AccessToken, string RefreshToken, DateTimeOffset ExpiresAtUtc);
 
-public record ProviderEvent(string ExternalEventId, string Title, DateTimeOffset StartUtc, DateTimeOffset EndUtc, bool IsAllDay);
+public record ProviderAttendee(string Email, string? Name, AttendeeResponseStatus ResponseStatus);
+
+public record ProviderEvent(
+    string ExternalEventId,
+    string Title,
+    DateTimeOffset StartUtc,
+    DateTimeOffset EndUtc,
+    bool IsAllDay,
+    string? OrganizerEmail,
+    string? OrganizerName,
+    IReadOnlyList<ProviderAttendee> Attendees);
 
 /// <summary>
 /// Thrown by an <see cref="ICalendarProviderClient"/> when a call fails because the stored

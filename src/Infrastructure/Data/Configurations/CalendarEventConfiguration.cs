@@ -25,6 +25,12 @@ public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent
                 code => ReferenceEquals(code, null) ? null : Colour.From(code))
             .HasMaxLength(7);
 
+        builder.Property(e => e.OrganizerEmail)
+            .HasMaxLength(320);
+
+        builder.Property(e => e.OrganizerName)
+            .HasMaxLength(512);
+
         // Only synced (non-local) events need dedup against the provider's event id; local
         // events always have a null CalendarConnectionId/ExternalEventId, and SQL Server's
         // unique index treats repeated NULLs as duplicates, so those rows must be excluded.
